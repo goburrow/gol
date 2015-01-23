@@ -12,7 +12,7 @@ necessary for applications in production as we might need to change logging
 level for components individually. However, I'm too lazy to support that in the
 `DefaultLoggerFactory` at the moment. Actually, the reason is that I have not
 decided what the behaviour if an user provides a "invalid" name, such as
-".a^.^b." or "a...b" (Pull requests are welcomed).
+".a^.^b." or "a...b" (Pull requests are welcome).
 
 ## Example
 See [example/example.go](https://github.com/goburrow/gol/blob/master/example/example.go)
@@ -25,6 +25,11 @@ import (
 	"os"
 	"time"
 )
+
+func init() {
+    // Override the default logger if needed, e.g.
+    // gol.StaticLoggerFactory = gol.NewLoggerFactory(os.Stderr)
+}
 
 func main() {
 	// Get logger with name "example"
