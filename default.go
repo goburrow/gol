@@ -69,7 +69,7 @@ type DefaultLayouter struct {
 }
 
 // NewLayouter allocates and returns a new DefaultLayouter
-func NewLayouter() *DefaultLayouter {
+func NewLayouter() Layouter {
 	return &DefaultLayouter{
 		Format:     defaultFormat,
 		TimeFormat: defaultTimeFormat,
@@ -91,7 +91,7 @@ type DefaultAppender struct {
 }
 
 // NewAppender allocates and returns a new DefaultAppender
-func NewAppender(writer io.Writer) *DefaultAppender {
+func NewAppender(writer io.Writer) Appender {
 	return &DefaultAppender{
 		writer: writer,
 	}
@@ -119,12 +119,14 @@ type DefaultLogger struct {
 	appender Appender
 }
 
-// NewLogger allocates and returns a new DefaultLogger
-func NewLogger(name string, parent *DefaultLogger) *DefaultLogger {
+// NewLogger allocates and returns a new DefaultLogger.
+// This method should not be called directly in application, use
+// LoggerFactory.GetLogger() instead as a DefaultLogger requires Appender and
+// Layouter either from itself or its parent.
+func NewLogger(name string) Logger {
 	return &DefaultLogger{
-		name:   name,
-		parent: parent,
-		level:  LevelUninitialized,
+		name:  name,
+		level: LevelUninitialized,
 	}
 }
 
@@ -134,7 +136,7 @@ func (logger *DefaultLogger) Trace(format string, args ...interface{}) {
 
 // TraceEnabled checks if Trace level is enabled
 func (logger *DefaultLogger) TraceEnabled() bool {
-	return logger.logEnabled(LevelTrace)
+	return logger.loggable(LevelTrace)
 }
 
 func (logger *DefaultLogger) Debug(format string, args ...interface{}) {
@@ -143,7 +145,7 @@ func (logger *DefaultLogger) Debug(format string, args ...interface{}) {
 
 // DebugEnabled checks if Debug level is enabled
 func (logger *DefaultLogger) DebugEnabled() bool {
-	return logger.logEnabled(LevelDebug)
+	return logger.loggable(LevelDebug)
 }
 
 func (logger *DefaultLogger) Info(format string, args ...interface{}) {
@@ -152,7 +154,7 @@ func (logger *DefaultLogger) Info(format string, args ...interface{}) {
 
 // InfoEnabled checks if Info level is enabled
 func (logger *DefaultLogger) InfoEnabled() bool {
-	return logger.logEnabled(LevelInfo)
+	return logger.loggable(LevelInfo)
 }
 
 func (logger *DefaultLogger) Warn(format string, args ...interface{}) {
@@ -161,7 +163,7 @@ func (logger *DefaultLogger) Warn(format string, args ...interface{}) {
 
 // WarnEnabled checks if Warning level is enabled
 func (logger *DefaultLogger) WarnEnabled() bool {
-	return logger.logEnabled(LevelWarn)
+	return logger.loggable(LevelWarn)
 }
 
 func (logger *DefaultLogger) Error(format string, args ...interface{}) {
@@ -170,7 +172,14 @@ func (logger *DefaultLogger) Error(format string, args ...interface{}) {
 
 // ErrorEnabled checks if Error level is enabled
 func (logger *DefaultLogger) ErrorEnabled() bool {
-	return logger.logEnabled(LevelError)
+	return logger.loggable(LevelError)
+}
+
+// SetParent sets the parent of current logger
+func (logger *DefaultLogger) SetParent(parent *DefaultLogger) {
+	if parent != logger {
+		logger.parent = parent
+	}
 }
 
 // Level returns level of this logger or parent if not set
@@ -221,14 +230,14 @@ func (logger *DefaultLogger) SetAppender(appender Appender) {
 	logger.appender = appender
 }
 
-// logEnabled checks if the given logging level is enabled within this logger
-func (logger *DefaultLogger) logEnabled(level Level) bool {
+// loggable checks if the given logging level is enabled within this logger
+func (logger *DefaultLogger) loggable(level Level) bool {
 	return level >= logger.Level()
 }
 
 // log performs logging with given parameters
 func (logger *DefaultLogger) log(level Level, format string, args []interface{}) {
-	if !logger.logEnabled(level) {
+	if !logger.loggable(level) {
 		return
 	}
 	layouter := logger.Layouter()
@@ -244,7 +253,7 @@ func (logger *DefaultLogger) log(level Level, format string, args []interface{})
 		Arguments: args,
 	}
 	record := layouter.Layout(&event)
-	// Asynchronous
+	// Should be asynchronous?
 	appender.Write([]byte(record))
 }
 
@@ -253,14 +262,14 @@ type DefaultLoggerFactory struct {
 	root *DefaultLogger
 
 	mu      sync.Mutex
-	loggers map[string]Logger
+	loggers map[string]*DefaultLogger
 }
 
 // NewLoggerFactory allocates and returns new DefaultLoggerFactory
-func NewLoggerFactory(writer io.Writer) *DefaultLoggerFactory {
+func NewLoggerFactory(writer io.Writer) LoggerFactory {
 	factory := &DefaultLoggerFactory{
-		root:    NewLogger(RootLoggerName, nil),
-		loggers: make(map[string]Logger),
+		root:    NewLogger(RootLoggerName).(*DefaultLogger),
+		loggers: make(map[string]*DefaultLogger),
 	}
 	factory.root.SetLevel(LevelDebug)
 	factory.root.SetLayouter(NewLayouter())
@@ -279,7 +288,8 @@ func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
 	}
 	logger, ok := factory.loggers[name]
 	if !ok {
-		logger = NewLogger(name, factory.root)
+		logger = NewLogger(name).(*DefaultLogger)
+		logger.SetParent(factory.root)
 		factory.loggers[name] = logger
 	}
 	return logger

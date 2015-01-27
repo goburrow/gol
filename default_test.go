@@ -67,7 +67,7 @@ func TestLayouter(t *testing.T) {
 
 func TestAppender(t *testing.T) {
 	var buf bytes.Buffer
-	appender := NewAppender(&buf)
+	appender := NewAppender(&buf).(*DefaultAppender)
 
 	appender.Write([]byte("something"))
 
@@ -81,7 +81,7 @@ func TestAppender(t *testing.T) {
 func TestLogger(t *testing.T) {
 	var buf bytes.Buffer
 
-	logger := NewLogger("MyLogger", nil)
+	logger := NewLogger("MyLogger").(*DefaultLogger)
 	logger.SetLevel(LevelInfo)
 	logger.SetLayouter(NewLayouter())
 	logger.SetAppender(NewAppender(&buf))
@@ -115,7 +115,7 @@ func logAllLevels(logger Logger) {
 }
 
 func TestRootLogger(t *testing.T) {
-	logger := NewLogger("RootLogger", nil)
+	logger := NewLogger("RootLogger").(*DefaultLogger)
 
 	// Should do nothing
 	logAllLevels(logger)
@@ -134,12 +134,13 @@ func TestRootLogger(t *testing.T) {
 func TestLoggerLevel(t *testing.T) {
 	var buf bytes.Buffer
 
-	root := NewLogger("ROOT", nil)
+	root := NewLogger("ROOT").(*DefaultLogger)
 	root.SetLevel(LevelAll)
 	root.SetLayouter(NewLayouter())
 	root.SetAppender(NewAppender(&buf))
 
-	logger := NewLogger("MyLogger", root)
+	logger := NewLogger("MyLogger").(*DefaultLogger)
+	logger.SetParent(root)
 	assertEquals(t, true, logger.TraceEnabled())
 	assertEquals(t, true, logger.DebugEnabled())
 	assertEquals(t, true, logger.InfoEnabled())
@@ -211,7 +212,7 @@ func TestLoggerLevel(t *testing.T) {
 }
 
 func TestLoggerFactory(t *testing.T) {
-	var factory LoggerFactory = NewLoggerFactory(os.Stdout)
+	factory := NewLoggerFactory(os.Stdout)
 	logger := factory.GetLogger("abc")
 
 	assertEquals(t, "abc", logger.(*DefaultLogger).name)
