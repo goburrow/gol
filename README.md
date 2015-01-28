@@ -1,4 +1,4 @@
-# gol [![Build Status](https://travis-ci.org/goburrow/gol.svg)](https://travis-ci.org/goburrow/gol) [![Coverage Status](https://coveralls.io/repos/goburrow/gol/badge.svg)](https://coveralls.io/r/goburrow/gol)
+# gol [![Build Status](https://travis-ci.org/goburrow/gol.svg)](https://travis-ci.org/goburrow/gol) [![Coverage Status](https://coveralls.io/repos/goburrow/gol/badge.svg?branch=master)](https://coveralls.io/r/goburrow/gol?branch=master)
 Go logging made simple
 
 ## Introduction
