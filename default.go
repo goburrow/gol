@@ -32,7 +32,8 @@ var levelStrings = []string{
 }
 
 const (
-	RootLoggerName = "ROOT"
+	// Name of the root logger
+	RootLoggerName = "root"
 	// ISO8601 with milliseconds
 	defaultTimeFormat = "2006-01-02T15:04:05.000-07:00"
 	// See LoggingEvent for the order
@@ -274,22 +275,41 @@ func NewLoggerFactory(writer io.Writer) LoggerFactory {
 	factory.root.SetLevel(LevelDebug)
 	factory.root.SetLayouter(NewLayouter())
 	factory.root.SetAppender(NewAppender(writer))
-	factory.loggers[RootLoggerName] = factory.root
 	return factory
 }
 
 // GetLogger returns a new Logger or an existing one if the same name is found
 func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
+	if name == "" || name == RootLoggerName {
+		return factory.root
+	}
 	factory.mu.Lock()
 	defer factory.mu.Unlock()
+	logger := factory.createLogger(name, factory.getParent(name))
+	return logger
+}
 
-	if name == "" {
-		name = RootLoggerName
+// getParent returns parent logger for given logger
+func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
+	parent := factory.root
+	for i, c := range name {
+		// Search for "." character
+		if c == '.' {
+			parentName := name[0:i]
+			if parentName != "" {
+				parent = factory.createLogger(parentName, parent)
+			}
+		}
 	}
+	return parent
+}
+
+// createLogger creates a new logger if not exist
+func (factory *DefaultLoggerFactory) createLogger(name string, parent *DefaultLogger) *DefaultLogger {
 	logger, ok := factory.loggers[name]
 	if !ok {
 		logger = NewLogger(name).(*DefaultLogger)
-		logger.SetParent(factory.root)
+		logger.SetParent(parent)
 		factory.loggers[name] = logger
 	}
 	return logger

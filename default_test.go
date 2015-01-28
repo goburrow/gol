@@ -213,13 +213,29 @@ func TestLoggerLevel(t *testing.T) {
 
 func TestLoggerFactory(t *testing.T) {
 	factory := NewLoggerFactory(os.Stdout)
-	logger := factory.GetLogger("abc")
+	logger := factory.GetLogger("abc").(*DefaultLogger)
 
-	assertEquals(t, "abc", logger.(*DefaultLogger).name)
+	assertEquals(t, "abc", logger.name)
 
-	logger = factory.GetLogger("def")
-	assertEquals(t, "def", logger.(*DefaultLogger).name)
+	logger = factory.GetLogger("def").(*DefaultLogger)
+	assertEquals(t, "def", logger.name)
 
-	logger = factory.GetLogger("")
-	assertEquals(t, "ROOT", logger.(*DefaultLogger).name)
+	logger = factory.GetLogger("").(*DefaultLogger)
+	assertEquals(t, "root", logger.name)
+}
+
+func TestLoggerHierarchy(t *testing.T) {
+	factory := NewLoggerFactory(os.Stdout)
+	root := factory.GetLogger("").(*DefaultLogger)
+	if root.parent != nil {
+		t.Fatal("Parent of root logger must be nil")
+	}
+
+	a := factory.GetLogger("aaa").(*DefaultLogger)
+	assertEquals(t, root, a.parent)
+
+	c := factory.GetLogger("aaa.bb.c").(*DefaultLogger)
+	b := factory.GetLogger("aaa.bb").(*DefaultLogger)
+	assertEquals(t, a, b.parent)
+	assertEquals(t, b, c.parent)
 }
