@@ -21,7 +21,16 @@ const (
 	LevelOff
 )
 
-var levelStrings = []string{
+const (
+	// Name of the root logger
+	RootLoggerName = "root"
+	// ISO8601 with milliseconds
+	defaultTimeFormat = "2006-01-02T15:04:05.000-07:00"
+	// See LoggingEvent for the order
+	defaultFormat = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
+)
+
+var levelStrings = map[Level]string{
 	LevelAll:   "ALL",
 	LevelTrace: "TRACE",
 	LevelDebug: "DEBUG",
@@ -31,14 +40,10 @@ var levelStrings = []string{
 	LevelOff:   "OFF",
 }
 
-const (
-	// Name of the root logger
-	RootLoggerName = "root"
-	// ISO8601 with milliseconds
-	defaultTimeFormat = "2006-01-02T15:04:05.000-07:00"
-	// See LoggingEvent for the order
-	defaultFormat = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
-)
+// LevelString returns the text for the level.
+func LevelString(level Level) string {
+	return levelStrings[level]
+}
 
 // LoggingEvent is the representation of logging events
 type LoggingEvent struct {
@@ -81,7 +86,7 @@ func (layouter *DefaultLayouter) Layout(event *LoggingEvent) string {
 	return fmt.Sprintf(layouter.Format,
 		fmt.Sprintf(event.Format, event.Arguments...),
 		event.Name,
-		levelStrings[event.Level],
+		LevelString(event.Level),
 		event.Time.Format(layouter.TimeFormat))
 }
 
