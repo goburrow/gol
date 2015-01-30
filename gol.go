@@ -1,3 +1,6 @@
+/*
+Package gol provides a simple logging framework.
+*/
 package gol
 
 import (
