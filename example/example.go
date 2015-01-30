@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/goburrow/gol"
 	"os"
 	"time"
+
+	"github.com/goburrow/gol"
 )
 
 func main() {

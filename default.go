@@ -27,7 +27,7 @@ const (
 	// ISO8601 with milliseconds
 	defaultTimeFormat = "2006-01-02T15:04:05.000-07:00"
 	// See LoggingEvent for the order
-	defaultFormat = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
+	defaultLayout = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
 )
 
 var levelStrings = map[Level]string{
@@ -58,9 +58,9 @@ type LoggingEvent struct {
 	Time time.Time
 }
 
-// Layouter constructs final message with given event
-type Layouter interface {
-	Layout(*LoggingEvent) string
+// Formatter constructs final message with given event
+type Formatter interface {
+	Format(*LoggingEvent) string
 }
 
 // Appender appends contents to a Writer
@@ -68,26 +68,26 @@ type Appender interface {
 	io.Writer
 }
 
-// DefaultLayouter implements Layouter interface
-type DefaultLayouter struct {
-	Format     string
+// DefaultFormatter implements Formatter interface
+type DefaultFormatter struct {
+	Layout     string
 	TimeFormat string
 }
 
-// NewLayouter allocates and returns a new DefaultLayouter
-func NewLayouter() Layouter {
-	return &DefaultLayouter{
-		Format:     defaultFormat,
+// NewFormatter allocates and returns a new DefaultFormatter
+func NewFormatter() Formatter {
+	return &DefaultFormatter{
+		Layout:     defaultLayout,
 		TimeFormat: defaultTimeFormat,
 	}
 }
 
-func (layouter *DefaultLayouter) Layout(event *LoggingEvent) string {
-	return fmt.Sprintf(layouter.Format,
+func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
+	return fmt.Sprintf(formatter.Layout,
 		fmt.Sprintf(event.Format, event.Arguments...),
 		event.Name,
 		LevelString(event.Level),
-		event.Time.Format(layouter.TimeFormat))
+		event.Time.Format(formatter.TimeFormat))
 }
 
 // DefaultAppender implements Appender interface
@@ -120,15 +120,15 @@ type DefaultLogger struct {
 	name   string
 	parent *DefaultLogger
 
-	level    Level
-	layouter Layouter
-	appender Appender
+	level     Level
+	formatter Formatter
+	appender  Appender
 }
 
 // NewLogger allocates and returns a new DefaultLogger.
 // This method should not be called directly in application, use
 // LoggerFactory.GetLogger() instead as a DefaultLogger requires Appender and
-// Layouter either from itself or its parent.
+// Formatter either from itself or its parent.
 func NewLogger(name string) Logger {
 	return &DefaultLogger{
 		name:  name,
@@ -204,20 +204,20 @@ func (logger *DefaultLogger) SetLevel(level Level) {
 	logger.level = level
 }
 
-// Layouter returns layouter of this logger or parent if not set
-func (logger *DefaultLogger) Layouter() Layouter {
-	if logger.layouter != nil {
-		return logger.layouter
+// Formatter returns formatter of this logger or parent if not set
+func (logger *DefaultLogger) Formatter() Formatter {
+	if logger.formatter != nil {
+		return logger.formatter
 	}
 	if logger.parent != nil {
-		return logger.parent.Layouter()
+		return logger.parent.Formatter()
 	}
-	return logger.layouter
+	return logger.formatter
 }
 
-// SetLayouter changes layouter of this logger
-func (logger *DefaultLogger) SetLayouter(layouter Layouter) {
-	logger.layouter = layouter
+// SetFormatter changes formatter of this logger
+func (logger *DefaultLogger) SetFormatter(formatter Formatter) {
+	logger.formatter = formatter
 }
 
 // Appender returns appender of this logger or parent if not set
@@ -246,9 +246,9 @@ func (logger *DefaultLogger) log(level Level, format string, args []interface{})
 	if !logger.loggable(level) {
 		return
 	}
-	layouter := logger.Layouter()
+	formatter := logger.Formatter()
 	appender := logger.Appender()
-	if layouter == nil || appender == nil {
+	if formatter == nil || appender == nil {
 		return
 	}
 	event := LoggingEvent{
@@ -258,7 +258,7 @@ func (logger *DefaultLogger) log(level Level, format string, args []interface{})
 		Format:    format,
 		Arguments: args,
 	}
-	record := layouter.Layout(&event)
+	record := formatter.Format(&event)
 	// Should be asynchronous?
 	appender.Write([]byte(record))
 }
@@ -278,7 +278,7 @@ func NewLoggerFactory(writer io.Writer) LoggerFactory {
 		loggers: make(map[string]*DefaultLogger),
 	}
 	factory.root.SetLevel(LevelDebug)
-	factory.root.SetLayouter(NewLayouter())
+	factory.root.SetFormatter(NewFormatter())
 	factory.root.SetAppender(NewAppender(writer))
 	return factory
 }

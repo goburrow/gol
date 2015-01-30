@@ -45,8 +45,8 @@ func assertContains(t *testing.T, s string, subs ...string) {
 	}
 }
 
-func TestLayouter(t *testing.T) {
-	layouter := NewLayouter()
+func TestFormatter(t *testing.T) {
+	formatter := NewFormatter()
 	args := make([]interface{}, 2)
 	args[0] = "#1"
 	args[1] = "#2"
@@ -58,7 +58,7 @@ func TestLayouter(t *testing.T) {
 		Level:     LevelTrace,
 		Time:      time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.UTC),
 	}
-	content := layouter.Layout(&event)
+	content := formatter.Format(&event)
 	expected := "TRACE [2015-04-03T02:01:00.789+00:00] My Logger: Arguments: #1, #2\n"
 	if expected != content {
 		t.Fatalf("Unexpected content: %s", content)
@@ -83,7 +83,7 @@ func TestLogger(t *testing.T) {
 
 	logger := NewLogger("MyLogger").(*DefaultLogger)
 	logger.SetLevel(LevelInfo)
-	logger.SetLayouter(NewLayouter())
+	logger.SetFormatter(NewFormatter())
 	logger.SetAppender(NewAppender(&buf))
 
 	logger.Trace("Trace")
@@ -123,10 +123,10 @@ func TestRootLogger(t *testing.T) {
 	logger.SetLevel(LevelInfo)
 	logAllLevels(logger)
 
-	logger.SetLayouter(NewLayouter())
+	logger.SetFormatter(NewFormatter())
 	logAllLevels(logger)
 
-	logger.SetLayouter(nil)
+	logger.SetFormatter(nil)
 	logger.SetAppender(NewAppender(nil))
 	logAllLevels(logger)
 }
@@ -136,7 +136,7 @@ func TestLoggerLevel(t *testing.T) {
 
 	root := NewLogger("ROOT").(*DefaultLogger)
 	root.SetLevel(LevelAll)
-	root.SetLayouter(NewLayouter())
+	root.SetFormatter(NewFormatter())
 	root.SetAppender(NewAppender(&buf))
 
 	logger := NewLogger("MyLogger").(*DefaultLogger)
