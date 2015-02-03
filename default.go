@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Level represents logging level
+// Level represents logging level.
 type Level int
 
 const (
@@ -22,11 +22,11 @@ const (
 )
 
 const (
-	// Name of the root logger
+	// Name of the root logger.
 	RootLoggerName = "root"
-	// ISO8601 with milliseconds
+	// ISO8601 with milliseconds.
 	defaultTimeFormat = "2006-01-02T15:04:05.000-07:00"
-	// See LoggingEvent for the order
+	// See LoggingEvent for the order.
 	defaultLayout = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
 )
 
@@ -45,36 +45,36 @@ func LevelString(level Level) string {
 	return levelStrings[level]
 }
 
-// LoggingEvent is the representation of logging events
+// LoggingEvent is the representation of logging events.
 type LoggingEvent struct {
-	// #1: The 2 following properties construct formatted message
+	// #1: The 2 following properties construct formatted message.
 	Format    string
 	Arguments []interface{}
-	// #2: Name of the logger
+	// #2: Name of the logger.
 	Name string
 	// #3: Log level
 	Level Level
-	// #4: Time that the logging happens
+	// #4: Time that the logging happens.
 	Time time.Time
 }
 
-// Formatter constructs final message with given event
+// Formatter constructs final message with given event.
 type Formatter interface {
 	Format(*LoggingEvent) string
 }
 
-// Appender appends contents to a Writer
+// Appender appends contents to a Writer.
 type Appender interface {
 	io.Writer
 }
 
-// DefaultFormatter implements Formatter interface
+// DefaultFormatter implements Formatter interface.
 type DefaultFormatter struct {
 	Layout     string
 	TimeFormat string
 }
 
-// NewFormatter allocates and returns a new DefaultFormatter
+// NewFormatter allocates and returns a new DefaultFormatter.
 func NewFormatter() Formatter {
 	return &DefaultFormatter{
 		Layout:     defaultLayout,
@@ -90,13 +90,13 @@ func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
 		event.Time.Format(formatter.TimeFormat))
 }
 
-// DefaultAppender implements Appender interface
+// DefaultAppender implements Appender interface.
 type DefaultAppender struct {
 	mu     sync.Mutex
 	writer io.Writer
 }
 
-// NewAppender allocates and returns a new DefaultAppender
+// NewAppender allocates and returns a new DefaultAppender.
 func NewAppender(writer io.Writer) Appender {
 	return &DefaultAppender{
 		writer: writer,
@@ -115,7 +115,7 @@ func (appender *DefaultAppender) SetWriter(writer io.Writer) {
 	appender.mu.Unlock()
 }
 
-// DefaultLogger implements Logger interface
+// DefaultLogger implements Logger interface.
 type DefaultLogger struct {
 	name   string
 	parent *DefaultLogger
@@ -140,7 +140,7 @@ func (logger *DefaultLogger) Trace(format string, args ...interface{}) {
 	logger.log(LevelTrace, format, args)
 }
 
-// TraceEnabled checks if Trace level is enabled
+// TraceEnabled checks if Trace level is enabled.
 func (logger *DefaultLogger) TraceEnabled() bool {
 	return logger.loggable(LevelTrace)
 }
@@ -149,7 +149,7 @@ func (logger *DefaultLogger) Debug(format string, args ...interface{}) {
 	logger.log(LevelDebug, format, args)
 }
 
-// DebugEnabled checks if Debug level is enabled
+// DebugEnabled checks if Debug level is enabled.
 func (logger *DefaultLogger) DebugEnabled() bool {
 	return logger.loggable(LevelDebug)
 }
@@ -158,7 +158,7 @@ func (logger *DefaultLogger) Info(format string, args ...interface{}) {
 	logger.log(LevelInfo, format, args)
 }
 
-// InfoEnabled checks if Info level is enabled
+// InfoEnabled checks if Info level is enabled.
 func (logger *DefaultLogger) InfoEnabled() bool {
 	return logger.loggable(LevelInfo)
 }
@@ -167,7 +167,7 @@ func (logger *DefaultLogger) Warn(format string, args ...interface{}) {
 	logger.log(LevelWarn, format, args)
 }
 
-// WarnEnabled checks if Warning level is enabled
+// WarnEnabled checks if Warning level is enabled.
 func (logger *DefaultLogger) WarnEnabled() bool {
 	return logger.loggable(LevelWarn)
 }
@@ -176,19 +176,19 @@ func (logger *DefaultLogger) Error(format string, args ...interface{}) {
 	logger.log(LevelError, format, args)
 }
 
-// ErrorEnabled checks if Error level is enabled
+// ErrorEnabled checks if Error level is enabled.
 func (logger *DefaultLogger) ErrorEnabled() bool {
 	return logger.loggable(LevelError)
 }
 
-// SetParent sets the parent of current logger
+// SetParent sets the parent of current logger.
 func (logger *DefaultLogger) SetParent(parent *DefaultLogger) {
 	if parent != logger {
 		logger.parent = parent
 	}
 }
 
-// Level returns level of this logger or parent if not set
+// Level returns level of this logger or parent if not set.
 func (logger *DefaultLogger) Level() Level {
 	if logger.level != LevelUninitialized {
 		return logger.level
@@ -199,12 +199,12 @@ func (logger *DefaultLogger) Level() Level {
 	return LevelOff
 }
 
-// SetLevel changes logging level of this logger
+// SetLevel changes logging level of this logger.
 func (logger *DefaultLogger) SetLevel(level Level) {
 	logger.level = level
 }
 
-// Formatter returns formatter of this logger or parent if not set
+// Formatter returns formatter of this logger or parent if not set.
 func (logger *DefaultLogger) Formatter() Formatter {
 	if logger.formatter != nil {
 		return logger.formatter
@@ -215,12 +215,12 @@ func (logger *DefaultLogger) Formatter() Formatter {
 	return logger.formatter
 }
 
-// SetFormatter changes formatter of this logger
+// SetFormatter changes formatter of this logger.
 func (logger *DefaultLogger) SetFormatter(formatter Formatter) {
 	logger.formatter = formatter
 }
 
-// Appender returns appender of this logger or parent if not set
+// Appender returns appender of this logger or parent if not set.
 func (logger *DefaultLogger) Appender() Appender {
 	if logger.appender != nil {
 		return logger.appender
@@ -231,17 +231,17 @@ func (logger *DefaultLogger) Appender() Appender {
 	return logger.appender
 }
 
-// SetAppender changes appender of this logger
+// SetAppender changes appender of this logger.
 func (logger *DefaultLogger) SetAppender(appender Appender) {
 	logger.appender = appender
 }
 
-// loggable checks if the given logging level is enabled within this logger
+// loggable checks if the given logging level is enabled within this logger.
 func (logger *DefaultLogger) loggable(level Level) bool {
 	return level >= logger.Level()
 }
 
-// log performs logging with given parameters
+// log performs logging with given parameters.
 func (logger *DefaultLogger) log(level Level, format string, args []interface{}) {
 	if !logger.loggable(level) {
 		return
@@ -263,7 +263,7 @@ func (logger *DefaultLogger) log(level Level, format string, args []interface{})
 	appender.Write([]byte(record))
 }
 
-// DefaultLoggerFactory implements LoggerFactory interface
+// DefaultLoggerFactory implements LoggerFactory interface.
 type DefaultLoggerFactory struct {
 	root *DefaultLogger
 
@@ -271,7 +271,7 @@ type DefaultLoggerFactory struct {
 	loggers map[string]*DefaultLogger
 }
 
-// NewLoggerFactory allocates and returns new DefaultLoggerFactory
+// NewLoggerFactory allocates and returns new DefaultLoggerFactory.
 func NewLoggerFactory(writer io.Writer) LoggerFactory {
 	factory := &DefaultLoggerFactory{
 		root:    NewLogger(RootLoggerName).(*DefaultLogger),
@@ -283,7 +283,7 @@ func NewLoggerFactory(writer io.Writer) LoggerFactory {
 	return factory
 }
 
-// GetLogger returns a new Logger or an existing one if the same name is found
+// GetLogger returns a new Logger or an existing one if the same name is found.
 func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
 	if name == "" || name == RootLoggerName {
 		return factory.root
@@ -294,7 +294,7 @@ func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
 	return logger
 }
 
-// getParent returns parent logger for given logger
+// getParent returns parent logger for given logger.
 func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
 	parent := factory.root
 	for i, c := range name {
@@ -309,7 +309,7 @@ func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
 	return parent
 }
 
-// createLogger creates a new logger if not exist
+// createLogger creates a new logger if not exist.
 func (factory *DefaultLoggerFactory) createLogger(name string, parent *DefaultLogger) *DefaultLogger {
 	logger, ok := factory.loggers[name]
 	if !ok {

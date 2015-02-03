@@ -1,6 +1,6 @@
 package gol
 
-// Logger specifies how logging in application is done
+// Logger specifies how logging in application is done.
 type Logger interface {
 	Trace(string, ...interface{})
 	TraceEnabled() bool
@@ -14,7 +14,7 @@ type Logger interface {
 	ErrorEnabled() bool
 }
 
-// LoggerFactory produces Logger
+// LoggerFactory produces Logger.
 type LoggerFactory interface {
 	GetLogger(name string) Logger
 }

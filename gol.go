@@ -11,7 +11,7 @@ import (
 // It is made public so that users can override it their package's init().
 var StaticLoggerFactory = NewLoggerFactory(os.Stdout)
 
-// GetLogger returns Logger in the default logger factory
+// GetLogger returns Logger in the default logger factory.
 func GetLogger(name string) Logger {
 	return StaticLoggerFactory.GetLogger(name)
 }
