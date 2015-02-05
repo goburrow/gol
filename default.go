@@ -83,8 +83,16 @@ func NewFormatter() Formatter {
 }
 
 func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
+	var msg string
+
+	if len(event.Arguments) > 0 {
+		msg = fmt.Sprintf(event.Format, event.Arguments...)
+	} else {
+		msg = event.Format
+	}
+
 	return fmt.Sprintf(formatter.Layout,
-		fmt.Sprintf(event.Format, event.Arguments...),
+		msg,
 		event.Name,
 		LevelString(event.Level),
 		event.Time.Format(formatter.TimeFormat))
