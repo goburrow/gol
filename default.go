@@ -47,6 +47,8 @@ func LevelString(level Level) string {
 
 // LoggingEvent is the representation of logging events.
 type LoggingEvent struct {
+	// FormattedMessage is the message formatted by Formatter.
+	FormattedMessage string
 	// #1: The 2 following properties construct formatted message.
 	Format    string
 	Arguments []interface{}
@@ -60,12 +62,12 @@ type LoggingEvent struct {
 
 // Formatter constructs final message with given event.
 type Formatter interface {
-	Format(*LoggingEvent) string
+	Format(*LoggingEvent)
 }
 
 // Appender appends contents to a Writer.
 type Appender interface {
-	io.Writer
+	Append(*LoggingEvent)
 }
 
 // DefaultFormatter implements Formatter interface.
@@ -82,7 +84,7 @@ func NewFormatter() Formatter {
 	}
 }
 
-func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
+func (formatter *DefaultFormatter) Format(event *LoggingEvent) {
 	var msg string
 
 	if len(event.Arguments) > 0 {
@@ -91,7 +93,7 @@ func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
 		msg = event.Format
 	}
 
-	return fmt.Sprintf(formatter.Layout,
+	event.FormattedMessage = fmt.Sprintf(formatter.Layout,
 		msg,
 		event.Name,
 		LevelString(event.Level),
@@ -101,25 +103,25 @@ func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
 // DefaultAppender implements Appender interface.
 type DefaultAppender struct {
 	mu     sync.Mutex
-	writer io.Writer
+	target io.Writer
 }
 
 // NewAppender allocates and returns a new DefaultAppender.
-func NewAppender(writer io.Writer) Appender {
+func NewAppender(target io.Writer) Appender {
 	return &DefaultAppender{
-		writer: writer,
+		target: target,
 	}
 }
 
-func (appender *DefaultAppender) Write(p []byte) (int, error) {
+func (appender *DefaultAppender) Append(event *LoggingEvent) {
 	appender.mu.Lock()
 	defer appender.mu.Unlock()
-	return appender.writer.Write(p)
+	appender.target.Write([]byte(event.FormattedMessage))
 }
 
-func (appender *DefaultAppender) SetWriter(writer io.Writer) {
+func (appender *DefaultAppender) SetTarget(target io.Writer) {
 	appender.mu.Lock()
-	appender.writer = writer
+	appender.target = target
 	appender.mu.Unlock()
 }
 
@@ -266,9 +268,8 @@ func (logger *DefaultLogger) log(level Level, format string, args []interface{})
 		Format:    format,
 		Arguments: args,
 	}
-	record := formatter.Format(&event)
-	// Should be asynchronous?
-	appender.Write([]byte(record))
+	formatter.Format(&event)
+	appender.Append(&event)
 }
 
 // DefaultLoggerFactory implements LoggerFactory interface.

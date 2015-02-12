@@ -58,10 +58,10 @@ func TestFormatter(t *testing.T) {
 		Level:     LevelTrace,
 		Time:      time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.UTC),
 	}
-	content := formatter.Format(&event)
+	formatter.Format(&event)
 	expected := "TRACE [2015-04-03T02:01:00.789+00:00] My Logger: Arguments: #1, #2\n"
-	if expected != content {
-		t.Fatalf("Unexpected content: %s", content)
+	if expected != event.FormattedMessage {
+		t.Fatalf("Unexpected content: %s", event.FormattedMessage)
 	}
 }
 
@@ -69,11 +69,11 @@ func TestAppender(t *testing.T) {
 	var buf bytes.Buffer
 	appender := NewAppender(&buf).(*DefaultAppender)
 
-	appender.Write([]byte("something"))
+	appender.Append(&LoggingEvent{FormattedMessage: "something"})
 
 	var buf2 bytes.Buffer
-	appender.SetWriter(&buf2)
-	appender.Write([]byte("something else"))
+	appender.SetTarget(&buf2)
+	appender.Append(&LoggingEvent{FormattedMessage: "something else"})
 	assertEquals(t, "something", buf.String())
 	assertEquals(t, "something else", buf2.String())
 }
