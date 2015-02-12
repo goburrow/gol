@@ -26,7 +26,7 @@ import (
 
 func init() {
     // Override the default logger if needed, e.g.
-    // gol.StaticLoggerFactory = gol.NewLoggerFactory(os.Stderr)
+    // gol.SetLoggerFactory(gol.NewLoggerFactory(os.Stderr))
 }
 
 func main() {
@@ -48,6 +48,6 @@ func main() {
 	// Output:
 	// INFO  [2015-01-14T12:43:35.546+10:00] example: Running app with arguments: [/go/bin/example].
 	// WARN  [2015-01-14T12:43:35.546+10:00] example: Going to do nothing.
-	// ERROR [2015-01-14T12:43:36.546+10:00] ROOT: I quit! bye bye.
+	// ERROR [2015-01-14T12:43:36.546+10:00] root: I quit! bye bye.
 }
 ```
