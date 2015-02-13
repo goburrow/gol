@@ -299,7 +299,10 @@ func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
 	}
 	factory.mu.Lock()
 	defer factory.mu.Unlock()
-	logger := factory.createLogger(name, factory.getParent(name))
+	logger, ok := factory.loggers[name]
+	if !ok {
+		logger = factory.createLogger(name, factory.getParent(name))
+	}
 	return logger
 }
 
