@@ -234,8 +234,8 @@ func TestLoggerHierarchy(t *testing.T) {
 	a := factory.GetLogger("aaa").(*DefaultLogger)
 	assertEquals(t, root, a.parent)
 
-	c := factory.GetLogger("aaa.bb.c").(*DefaultLogger)
-	b := factory.GetLogger("aaa.bb").(*DefaultLogger)
+	c := factory.GetLogger("aaa/bb/c.go").(*DefaultLogger)
+	b := factory.GetLogger("aaa/bb").(*DefaultLogger)
 	assertEquals(t, a, b.parent)
 	assertEquals(t, b, c.parent)
 }

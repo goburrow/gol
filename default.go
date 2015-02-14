@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const packageSeparator = '/'
+
 // Level represents logging level.
 type Level int
 
@@ -311,7 +313,7 @@ func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
 	parent := factory.root
 	for i, c := range name {
 		// Search for "." character
-		if c == '.' {
+		if c == packageSeparator {
 			parentName := name[0:i]
 			if parentName != "" {
 				parent = factory.createLogger(parentName, parent)

@@ -9,7 +9,7 @@ The [`Logger` interface](https://github.com/goburrow/gol/blob/master/api.go)
 is quite minimal and does not allow you to set level directly but
 the `DefaultLogger`, its default implementation, does.
 You can also create a Logger hierarchy with the `DefaultLogger`.
-A logger "a.b" will inherit logging level, layouter and appender from logger "a"
+A logger "a/b/c" will inherit logging level, layouter and appender from logger "a/b"
 unless its own properties are set.
 
 ## Example
