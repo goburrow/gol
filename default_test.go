@@ -239,3 +239,11 @@ func TestLoggerHierarchy(t *testing.T) {
 	assertEquals(t, a, b.parent)
 	assertEquals(t, b, c.parent)
 }
+
+func TestHierarchyWithRootLogger(t *testing.T) {
+	factory := NewLoggerFactory(os.Stdout)
+	root := factory.GetLogger(RootLoggerName).(*DefaultLogger)
+	a := factory.GetLogger("root/a").(*DefaultLogger)
+	assertEquals(t, 2, len(factory.(*DefaultLoggerFactory).loggers))
+	assertEquals(t, root, a.parent)
+}

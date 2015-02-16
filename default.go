@@ -291,12 +291,13 @@ func NewLoggerFactory(writer io.Writer) LoggerFactory {
 	factory.root.SetLevel(LevelDebug)
 	factory.root.SetFormatter(NewFormatter())
 	factory.root.SetAppender(NewAppender(writer))
+	factory.loggers[RootLoggerName] = factory.root
 	return factory
 }
 
 // GetLogger returns a new Logger or an existing one if the same name is found.
 func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
-	if name == "" || name == RootLoggerName {
+	if name == "" {
 		return factory.root
 	}
 	factory.mu.Lock()
