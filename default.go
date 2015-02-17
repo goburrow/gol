@@ -27,7 +27,7 @@ const (
 	// Name of the root logger.
 	RootLoggerName = "root"
 	// ISO8601 with milliseconds.
-	defaultTimeFormat = "2006-01-02T15:04:05.000-07:00"
+	defaultTimeLayout = "2006-01-02T15:04:05.000-07:00"
 	// See LoggingEvent for the order.
 	defaultLayout = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
 )
@@ -49,11 +49,10 @@ func LevelString(level Level) string {
 
 // LoggingEvent is the representation of logging events.
 type LoggingEvent struct {
-	// FormattedMessage is the message formatted by Formatter.
-	FormattedMessage string
-	// #1: The 2 following properties construct formatted message.
 	Format    string
 	Arguments []interface{}
+	// #1 FormattedMessage is the message formatted by Formatter.
+	FormattedMessage string
 	// #2: Name of the logger.
 	Name string
 	// #3: Log level
@@ -74,36 +73,26 @@ type Appender interface {
 
 // DefaultFormatter implements Formatter interface.
 type DefaultFormatter struct {
-	Layout     string
-	TimeFormat string
 }
 
 // NewFormatter allocates and returns a new DefaultFormatter.
 func NewFormatter() Formatter {
-	return &DefaultFormatter{
-		Layout:     defaultLayout,
-		TimeFormat: defaultTimeFormat,
-	}
+	return &DefaultFormatter{}
 }
 
 func (formatter *DefaultFormatter) Format(event *LoggingEvent) {
-	var msg string
-
 	if len(event.Arguments) > 0 {
-		msg = fmt.Sprintf(event.Format, event.Arguments...)
+		event.FormattedMessage = fmt.Sprintf(event.Format, event.Arguments...)
 	} else {
-		msg = event.Format
+		event.FormattedMessage = event.Format
 	}
-
-	event.FormattedMessage = fmt.Sprintf(formatter.Layout,
-		msg,
-		event.Name,
-		LevelString(event.Level),
-		event.Time.Format(formatter.TimeFormat))
 }
 
 // DefaultAppender implements Appender interface.
 type DefaultAppender struct {
+	Layout     string
+	TimeLayout string
+
 	mu     sync.Mutex
 	target io.Writer
 }
@@ -111,6 +100,9 @@ type DefaultAppender struct {
 // NewAppender allocates and returns a new DefaultAppender.
 func NewAppender(target io.Writer) Appender {
 	return &DefaultAppender{
+		Layout:     defaultLayout,
+		TimeLayout: defaultTimeLayout,
+
 		target: target,
 	}
 }
@@ -118,7 +110,12 @@ func NewAppender(target io.Writer) Appender {
 func (appender *DefaultAppender) Append(event *LoggingEvent) {
 	appender.mu.Lock()
 	defer appender.mu.Unlock()
-	appender.target.Write([]byte(event.FormattedMessage))
+
+	fmt.Fprintf(appender.target, appender.Layout,
+		event.FormattedMessage,
+		event.Name,
+		LevelString(event.Level),
+		event.Time.Format(appender.TimeLayout))
 }
 
 func (appender *DefaultAppender) SetTarget(target io.Writer) {

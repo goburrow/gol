@@ -54,28 +54,36 @@ func TestFormatter(t *testing.T) {
 	event := LoggingEvent{
 		Format:    "Arguments: %v, %v",
 		Arguments: args,
-		Name:      "My Logger",
-		Level:     LevelTrace,
-		Time:      time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.UTC),
 	}
 	formatter.Format(&event)
-	expected := "TRACE [2015-04-03T02:01:00.789+00:00] My Logger: Arguments: #1, #2\n"
-	if expected != event.FormattedMessage {
-		t.Fatalf("Unexpected content: %s", event.FormattedMessage)
-	}
+	assertEquals(t, "Arguments: #1, #2", event.FormattedMessage)
+
+	// Empty argument
+	event.Arguments = nil
+	formatter.Format(&event)
+	assertEquals(t, "Arguments: %v, %v", event.FormattedMessage)
 }
 
 func TestAppender(t *testing.T) {
 	var buf bytes.Buffer
 	appender := NewAppender(&buf).(*DefaultAppender)
 
-	appender.Append(&LoggingEvent{FormattedMessage: "something"})
+	event := &LoggingEvent{
+		FormattedMessage: "something",
+		Name:             "My Logger",
+		Level:            LevelTrace,
+		Time:             time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.UTC),
+	}
+	appender.Append(event)
+
+	event.FormattedMessage = "something else"
+	event.Time = event.Time.Add(1 * time.Minute)
 
 	var buf2 bytes.Buffer
 	appender.SetTarget(&buf2)
-	appender.Append(&LoggingEvent{FormattedMessage: "something else"})
-	assertEquals(t, "something", buf.String())
-	assertEquals(t, "something else", buf2.String())
+	appender.Append(event)
+	assertEquals(t, "TRACE [2015-04-03T02:01:00.789+00:00] My Logger: something\n", buf.String())
+	assertEquals(t, "TRACE [2015-04-03T02:02:00.789+00:00] My Logger: something else\n", buf2.String())
 }
 
 func TestLogger(t *testing.T) {
