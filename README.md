@@ -1,4 +1,4 @@
-# gol [![Build Status](https://travis-ci.org/goburrow/gol.svg)](https://travis-ci.org/goburrow/gol) [![Coverage Status](https://coveralls.io/repos/goburrow/gol/badge.svg?branch=master)](https://coveralls.io/r/goburrow/gol?branch=master)
+# gol [![Build Status](https://travis-ci.org/goburrow/gol.svg)](https://travis-ci.org/goburrow/gol) [![GoDoc](https://godoc.org/github.com/goburrow/gol?status.svg)](https://godoc.org/github.com/goburrow/gol) [![Coverage Status](https://coveralls.io/repos/goburrow/gol/badge.svg?branch=master)](https://coveralls.io/r/goburrow/gol?branch=master)
 Go logging made simple
 
 ## Introduction
@@ -19,35 +19,39 @@ See [example/example.go](https://github.com/goburrow/gol/blob/master/example/exa
 package main
 
 import (
-	"github.com/goburrow/gol"
 	"os"
 	"time"
+
+	"github.com/goburrow/gol"
 )
 
+var exampleLogger, appLogger gol.Logger
+
 func init() {
-    // Override the default logger if needed, e.g.
-    // gol.SetLoggerFactory(gol.NewLoggerFactory(os.Stderr))
+	// Override the default logger if needed, e.g.
+	// gol.SetLoggerFactory(gol.NewLoggerFactory(os.Stderr))
+
+	// Get logger with name "app/example"
+	exampleLogger = gol.GetLogger("app/example")
+	// Logger "app" is the parent of the logger "app/example"
+	appLogger = gol.GetLogger("app")
 }
 
 func main() {
-	// Get logger with name "example"
-	logger := gol.GetLogger("example")
-	logger.Info("Running app with arguments: %v.", os.Args)
+	exampleLogger.Info("Running app with arguments: %v.", os.Args)
 
-	logger.Warn("Going to do nothing.")
+	exampleLogger.Warn("Going to do nothing.")
 	time.Sleep(1 * time.Second)
 
-	// Root logger is what other loggers inherit from
-	rootLogger := gol.GetLogger(gol.RootLoggerName)
-	// DefaultLogger is an internal implementation of Logger
-	rootLogger.(*gol.DefaultLogger).SetLevel(gol.LevelWarn)
+	// DefaultLogger is the internal implementation of Logger
+	appLogger.(*gol.DefaultLogger).SetLevel(gol.LevelWarn)
 
-	logger.Info("You won't see this message.")
-	rootLogger.Error("I %v! %[2]v %[2]v.", "quit", "bye")
+	exampleLogger.Info("You won't see this message.")
+	appLogger.Error("I %v! %[2]v %[2]v.", "quit", "bye")
 
 	// Output:
-	// INFO  [2015-01-14T12:43:35.546+10:00] example: Running app with arguments: [/go/bin/example].
-	// WARN  [2015-01-14T12:43:35.546+10:00] example: Going to do nothing.
-	// ERROR [2015-01-14T12:43:36.546+10:00] root: I quit! bye bye.
+	// INFO  [2015-01-14T12:43:35.546+10:00] app/example: Running app with arguments: [/go/bin/example].
+	// WARN  [2015-01-14T12:43:35.546+10:00] app/example: Going to do nothing.
+	// ERROR [2015-01-14T12:43:36.546+10:00] app: I quit! bye bye.
 }
 ```
