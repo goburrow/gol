@@ -63,7 +63,12 @@ type LoggingEvent struct {
 
 // Formatter constructs final message with given event.
 type Formatter interface {
-	Format(*LoggingEvent)
+	Format(*LoggingEvent) string
+}
+
+// Encoder encodes logging event to the given target.
+type Encoder interface {
+	Encode(*LoggingEvent, io.Writer) error
 }
 
 // Appender appends contents to a Writer.
@@ -76,34 +81,52 @@ type DefaultFormatter struct {
 }
 
 // NewFormatter allocates and returns a new DefaultFormatter.
-func NewFormatter() Formatter {
+func NewFormatter() *DefaultFormatter {
 	return &DefaultFormatter{}
 }
 
-func (formatter *DefaultFormatter) Format(event *LoggingEvent) {
-	if len(event.Arguments) > 0 {
-		event.FormattedMessage = fmt.Sprintf(event.Format, event.Arguments...)
-	} else {
-		event.FormattedMessage = event.Format
+func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
+	if len(event.Arguments) == 0 {
+		return event.Format
 	}
+	return fmt.Sprintf(event.Format, event.Arguments...)
+}
+
+type DefaultEncoder struct {
+	Layout     string
+	TimeLayout string
+}
+
+func NewEncoder() *DefaultEncoder {
+	return &DefaultEncoder{
+		Layout:     defaultLayout,
+		TimeLayout: defaultTimeLayout,
+	}
+}
+
+func (encoder *DefaultEncoder) Encode(event *LoggingEvent, target io.Writer) error {
+	var err error
+	_, err = fmt.Fprintf(target, encoder.Layout,
+		event.FormattedMessage,
+		event.Name,
+		LevelString(event.Level),
+		event.Time.Format(encoder.TimeLayout))
+	return err
 }
 
 // DefaultAppender implements Appender interface.
 type DefaultAppender struct {
-	Layout     string
-	TimeLayout string
+	Encoder Encoder
 
 	mu     sync.Mutex
 	target io.Writer
 }
 
 // NewAppender allocates and returns a new DefaultAppender.
-func NewAppender(target io.Writer) Appender {
+func NewAppender(target io.Writer) *DefaultAppender {
 	return &DefaultAppender{
-		Layout:     defaultLayout,
-		TimeLayout: defaultTimeLayout,
-
-		target: target,
+		Encoder: NewEncoder(),
+		target:  target,
 	}
 }
 
@@ -111,11 +134,7 @@ func (appender *DefaultAppender) Append(event *LoggingEvent) {
 	appender.mu.Lock()
 	defer appender.mu.Unlock()
 
-	fmt.Fprintf(appender.target, appender.Layout,
-		event.FormattedMessage,
-		event.Name,
-		LevelString(event.Level),
-		event.Time.Format(appender.TimeLayout))
+	appender.Encoder.Encode(event, appender.target)
 }
 
 func (appender *DefaultAppender) SetTarget(target io.Writer) {
@@ -138,7 +157,7 @@ type DefaultLogger struct {
 // This method should not be called directly in application, use
 // LoggerFactory.GetLogger() instead as a DefaultLogger requires Appender and
 // Formatter either from itself or its parent.
-func NewLogger(name string) Logger {
+func NewLogger(name string) *DefaultLogger {
 	return &DefaultLogger{
 		name:  name,
 		level: LevelUninitialized,
@@ -267,7 +286,7 @@ func (logger *DefaultLogger) log(level Level, format string, args []interface{})
 		Format:    format,
 		Arguments: args,
 	}
-	formatter.Format(&event)
+	event.FormattedMessage = formatter.Format(&event)
 	appender.Append(&event)
 }
 
@@ -282,7 +301,7 @@ type DefaultLoggerFactory struct {
 // NewLoggerFactory allocates and returns new DefaultLoggerFactory.
 func NewLoggerFactory(writer io.Writer) LoggerFactory {
 	factory := &DefaultLoggerFactory{
-		root:    NewLogger(RootLoggerName).(*DefaultLogger),
+		root:    NewLogger(RootLoggerName),
 		loggers: make(map[string]*DefaultLogger),
 	}
 	factory.root.SetLevel(LevelDebug)
@@ -325,7 +344,7 @@ func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
 func (factory *DefaultLoggerFactory) createLogger(name string, parent *DefaultLogger) *DefaultLogger {
 	logger, ok := factory.loggers[name]
 	if !ok {
-		logger = NewLogger(name).(*DefaultLogger)
+		logger = NewLogger(name)
 		logger.SetParent(parent)
 		factory.loggers[name] = logger
 	}

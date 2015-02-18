@@ -55,18 +55,18 @@ func TestFormatter(t *testing.T) {
 		Format:    "Arguments: %v, %v",
 		Arguments: args,
 	}
-	formatter.Format(&event)
+	event.FormattedMessage = formatter.Format(&event)
 	assertEquals(t, "Arguments: #1, #2", event.FormattedMessage)
 
 	// Empty argument
 	event.Arguments = nil
-	formatter.Format(&event)
+	event.FormattedMessage = formatter.Format(&event)
 	assertEquals(t, "Arguments: %v, %v", event.FormattedMessage)
 }
 
 func TestAppender(t *testing.T) {
 	var buf bytes.Buffer
-	appender := NewAppender(&buf).(*DefaultAppender)
+	appender := NewAppender(&buf)
 
 	event := &LoggingEvent{
 		FormattedMessage: "something",
@@ -89,7 +89,7 @@ func TestAppender(t *testing.T) {
 func TestLogger(t *testing.T) {
 	var buf bytes.Buffer
 
-	logger := NewLogger("MyLogger").(*DefaultLogger)
+	logger := NewLogger("MyLogger")
 	logger.SetLevel(LevelInfo)
 	logger.SetFormatter(NewFormatter())
 	logger.SetAppender(NewAppender(&buf))
@@ -123,7 +123,7 @@ func logAllLevels(logger Logger) {
 }
 
 func TestRootLogger(t *testing.T) {
-	logger := NewLogger("RootLogger").(*DefaultLogger)
+	logger := NewLogger("RootLogger")
 
 	// Should do nothing
 	logAllLevels(logger)
@@ -142,12 +142,12 @@ func TestRootLogger(t *testing.T) {
 func TestLoggerLevel(t *testing.T) {
 	var buf bytes.Buffer
 
-	root := NewLogger("ROOT").(*DefaultLogger)
+	root := NewLogger(RootLoggerName)
 	root.SetLevel(LevelAll)
 	root.SetFormatter(NewFormatter())
 	root.SetAppender(NewAppender(&buf))
 
-	logger := NewLogger("MyLogger").(*DefaultLogger)
+	logger := NewLogger("MyLogger")
 	logger.SetParent(root)
 	assertEquals(t, true, logger.TraceEnabled())
 	assertEquals(t, true, logger.DebugEnabled())

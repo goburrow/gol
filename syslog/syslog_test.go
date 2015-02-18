@@ -7,7 +7,7 @@ import (
 )
 
 func TestSyslog(t *testing.T) {
-	appender := NewAppender("test")
+	appender := NewAppender("gol")
 	err := appender.Start()
 	if err != nil {
 		t.Fatal(err)
@@ -17,6 +17,7 @@ func TestSyslog(t *testing.T) {
 	event := &gol.LoggingEvent{
 		FormattedMessage: "message",
 		Level:            gol.LevelInfo,
+		Name:             "gol/syslog",
 	}
 	appender.Append(event)
 }
