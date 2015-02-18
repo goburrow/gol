@@ -27,7 +27,7 @@ const (
 	// Name of the root logger.
 	RootLoggerName = "root"
 	// ISO8601 with milliseconds.
-	defaultTimeLayout = "2006-01-02T15:04:05.000-07:00"
+	defaultTimeLayout = "2006-01-02T15:04:05.000Z07:00"
 	// See LoggingEvent for the order.
 	defaultLayout = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
 )

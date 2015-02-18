@@ -64,6 +64,26 @@ func TestFormatter(t *testing.T) {
 	assertEquals(t, "Arguments: %v, %v", event.FormattedMessage)
 }
 
+func TestEncoder(t *testing.T) {
+	encoder := NewEncoder()
+	event := &LoggingEvent{
+		FormattedMessage: "message",
+		Name:             "name",
+		Level:            LevelError,
+		Time:             time.Date(2015, time.March, 21, 0, 0, 0, 789000000, time.FixedZone("Asia/Ho_Chi_Minh", 7*60*60)),
+	}
+
+	var buf bytes.Buffer
+	encoder.Encode(event, &buf)
+	assertEquals(t, "ERROR [2015-03-21T00:00:00.789+07:00] name: message\n", buf.String())
+
+	buf.Reset()
+	encoder.Layout = "%[4]s %[2]s: (%[3]s) %[1]s\n"
+	encoder.TimeLayout = time.RFC3339
+	encoder.Encode(event, &buf)
+	assertEquals(t, "2015-03-21T00:00:00+07:00 name: (ERROR) message\n", buf.String())
+}
+
 func TestAppender(t *testing.T) {
 	var buf bytes.Buffer
 	appender := NewAppender(&buf)
@@ -80,10 +100,15 @@ func TestAppender(t *testing.T) {
 	event.Time = event.Time.Add(1 * time.Minute)
 
 	var buf2 bytes.Buffer
+	encoder := NewEncoder()
+	encoder.Layout = "%[4]s %[2]s: %[1]s\n"
+
 	appender.SetTarget(&buf2)
+	appender.SetEncoder(encoder)
+
 	appender.Append(event)
-	assertEquals(t, "TRACE [2015-04-03T02:01:00.789+00:00] My Logger: something\n", buf.String())
-	assertEquals(t, "TRACE [2015-04-03T02:02:00.789+00:00] My Logger: something else\n", buf2.String())
+	assertEquals(t, "TRACE [2015-04-03T02:01:00.789Z] My Logger: something\n", buf.String())
+	assertEquals(t, "2015-04-03T02:02:00.789Z My Logger: something else\n", buf2.String())
 }
 
 func TestLogger(t *testing.T) {
