@@ -6,10 +6,10 @@ gol (or golog) provides a generic logging API and a simple implementation which
 supports logging level and hierarchy.
 
 The [`Logger` interface](https://github.com/goburrow/gol/blob/master/api.go)
-is quite minimal and does not allow you to set level directly but
+is kept minimal and does not allow you to set level directly but
 the `DefaultLogger`, its default implementation, does.
 You can also create a Logger hierarchy with the `DefaultLogger`.
-A logger "a/b/c" will inherit logging level, layouter and appender from logger "a/b"
+For example, logger `a/b/c` will inherit logging level and appender from logger `a/b`
 unless its own properties are set.
 
 ## Example
