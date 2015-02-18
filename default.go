@@ -92,11 +92,13 @@ func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
 	return fmt.Sprintf(event.Format, event.Arguments...)
 }
 
+// DefaultEncoder implements Encoder interface.
 type DefaultEncoder struct {
 	Layout     string
 	TimeLayout string
 }
 
+// NewEncoder allocates and returns a new DefaultEncoder.
 func NewEncoder() *DefaultEncoder {
 	return &DefaultEncoder{
 		Layout:     defaultLayout,
@@ -116,7 +118,7 @@ func (encoder *DefaultEncoder) Encode(event *LoggingEvent, target io.Writer) err
 
 // DefaultAppender implements Appender interface.
 type DefaultAppender struct {
-	Encoder Encoder
+	encoder Encoder
 
 	mu     sync.Mutex
 	target io.Writer
@@ -125,22 +127,46 @@ type DefaultAppender struct {
 // NewAppender allocates and returns a new DefaultAppender.
 func NewAppender(target io.Writer) *DefaultAppender {
 	return &DefaultAppender{
-		Encoder: NewEncoder(),
+		encoder: NewEncoder(),
 		target:  target,
 	}
 }
 
+// Append uses its encoder to send the event to the target.
 func (appender *DefaultAppender) Append(event *LoggingEvent) {
 	appender.mu.Lock()
 	defer appender.mu.Unlock()
 
-	appender.Encoder.Encode(event, appender.target)
+	appender.encoder.Encode(event, appender.target)
 }
 
+// SetTarget changes target of this appender.
 func (appender *DefaultAppender) SetTarget(target io.Writer) {
 	appender.mu.Lock()
 	appender.target = target
 	appender.mu.Unlock()
+}
+
+// SetEncoder changes encoder of this appender.
+func (appender *DefaultAppender) SetEncoder(encoder Encoder) {
+	appender.mu.Lock()
+	appender.encoder = encoder
+	appender.mu.Unlock()
+}
+
+// AsyncAppender is an appender that runs asynchrously.
+type AsyncAppender struct {
+	appender Appender
+}
+
+// NewAsyncAppender allocates and returns a new AsyncAppender
+func NewAsyncAppender(a Appender) *AsyncAppender {
+	return &AsyncAppender{a}
+}
+
+// Append calls appender
+func (appender *AsyncAppender) Append(event *LoggingEvent) {
+	go appender.appender.Append(event)
 }
 
 // DefaultLogger implements Logger interface.
