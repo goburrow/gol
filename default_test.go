@@ -2,6 +2,8 @@ package gol
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -109,6 +111,25 @@ func TestAppender(t *testing.T) {
 	appender.Append(event)
 	assertEquals(t, "TRACE [2015-04-03T02:01:00.789Z] My Logger: something\n", buf.String())
 	assertEquals(t, "2015-04-03T02:02:00.789Z My Logger: something else\n", buf2.String())
+}
+
+type errorEncoder struct {
+}
+
+func (*errorEncoder) Encode(*LoggingEvent, io.Writer) error {
+	return errors.New("encode")
+}
+
+func TestAppenderWithErrorEncoder(t *testing.T) {
+	var buf bytes.Buffer
+	appender := NewAppender(&buf)
+	appender.SetEncoder(&errorEncoder{})
+
+	event := &LoggingEvent{
+		FormattedMessage: "something",
+	}
+	appender.Append(event)
+	assertEquals(t, "", buf.String())
 }
 
 func TestLogger(t *testing.T) {

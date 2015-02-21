@@ -1,6 +1,10 @@
 package gol
 
 import (
+	"errors"
+	"io/ioutil"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -23,5 +27,35 @@ func TestSetLoggerFactory(t *testing.T) {
 	logger := GetLogger("go")
 	if "test.go" != logger.(*DefaultLogger).name {
 		t.Fatalf("Unexpected logger %#v", logger)
+	}
+}
+
+func TestDebugMode(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+	oldStderr := os.Stderr
+	defer func() {
+		os.Stderr = oldStderr
+	}()
+
+	os.Stderr = f
+	SetDebugMode(true)
+	Print(1, "2", errors.New("test"))
+	if err = f.Sync(); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "1 2 test") {
+		t.Fatal(string(content))
 	}
 }

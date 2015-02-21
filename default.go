@@ -137,7 +137,9 @@ func (appender *DefaultAppender) Append(event *LoggingEvent) {
 	appender.mu.Lock()
 	defer appender.mu.Unlock()
 
-	appender.encoder.Encode(event, appender.target)
+	if err := appender.encoder.Encode(event, appender.target); err != nil {
+		Print(err)
+	}
 }
 
 // SetTarget changes target of this appender.
