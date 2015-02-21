@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,5 +35,11 @@ func TestFile(t *testing.T) {
 	}
 	appender.Append(event)
 
-	// TODO: assert file content
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "gol/file: message") {
+		t.Fatalf("unexpected content: %s", string(content))
+	}
 }
