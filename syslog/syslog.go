@@ -42,8 +42,7 @@ func (a *Appender) Append(event *gol.LoggingEvent) {
 	var err error
 	if a.target == nil {
 		if err := a.connect(); err != nil {
-			// FIXME: displaying error
-			println("gol/syslog:", err.Error())
+			gol.Print(err)
 			return
 		}
 	}
@@ -60,7 +59,7 @@ func (a *Appender) Append(event *gol.LoggingEvent) {
 		err = a.target.Debug(buf.String())
 	}
 	if err != nil {
-		println("gol/syslog:", err.Error())
+		gol.Print(err)
 	}
 }
 
