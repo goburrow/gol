@@ -301,24 +301,3 @@ func TestHierarchyWithRootLogger(t *testing.T) {
 	assertEquals(t, 2, len(factory.(*DefaultLoggerFactory).loggers))
 	assertEquals(t, root, a.parent)
 }
-
-// channelWriter is used for testing async appender
-type channelWriter chan string
-
-func (c channelWriter) Write(b []byte) (int, error) {
-	c <- string(b)
-	return len(b), nil
-}
-
-func TestAsyncAppender(t *testing.T) {
-	c := make(chan string)
-
-	factory := NewLoggerFactory(os.Stdout)
-	logger := factory.GetLogger("async").(*DefaultLogger)
-	logger.SetAppender(NewAsyncAppender(NewAppender(channelWriter(c))))
-	logger.Info("run")
-	select {
-	case msg := <-c:
-		assertContains(t, msg, "async: run")
-	}
-}

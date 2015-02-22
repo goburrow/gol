@@ -156,21 +156,6 @@ func (appender *DefaultAppender) SetEncoder(encoder Encoder) {
 	appender.mu.Unlock()
 }
 
-// AsyncAppender is an appender that runs asynchrously.
-type AsyncAppender struct {
-	appender Appender
-}
-
-// NewAsyncAppender allocates and returns a new AsyncAppender
-func NewAsyncAppender(a Appender) *AsyncAppender {
-	return &AsyncAppender{a}
-}
-
-// Append calls appender
-func (appender *AsyncAppender) Append(event *LoggingEvent) {
-	go appender.appender.Append(event)
-}
-
 // DefaultLogger implements Logger interface.
 type DefaultLogger struct {
 	name   string
