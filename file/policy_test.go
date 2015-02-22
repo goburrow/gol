@@ -36,8 +36,10 @@ func TestFileExists(t *testing.T) {
 	}
 }
 
+var stubTime = time.Date(2015, 4, 3, 23, 59, 59, 9E8, time.Local)
+
 func stubCurrentTime() time.Time {
-	return time.Date(2015, 4, 3, 0, 0, 0, 0, time.Local)
+	return stubTime
 }
 
 func TestTimeRollingPolicy(t *testing.T) {
@@ -196,5 +198,24 @@ func TestTimeRollingPolicyHistory(t *testing.T) {
 	}
 	if _, err := os.Stat(name1); err == nil {
 		t.Fatal("%#v should should be removed", name1)
+	}
+}
+
+func TestTriggerringPolicy(t *testing.T) {
+	p := NewTimeTriggeringPolicy()
+
+	p.startTimer(stubTime)
+	triggering := p.IsTriggering(nil, nil)
+	if triggering {
+		t.Fatalf("invalid triggering: %#v", triggering)
+	}
+	time.Sleep(200 * time.Millisecond)
+	triggering = p.IsTriggering(nil, nil)
+	if !triggering {
+		t.Fatalf("invalid triggering: %#v", triggering)
+	}
+	triggering = p.IsTriggering(nil, nil)
+	if triggering {
+		t.Fatalf("invalid triggering: %#v", triggering)
 	}
 }

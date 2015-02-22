@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/goburrow/gol"
@@ -55,7 +56,97 @@ func (f timeKeeperFunc) CurrentTime() time.Time {
 	return f()
 }
 
+// TimeTriggeringPolicy triggers when day changed.
+// TODO: able to specify daily, weekly or monthly.
+type TimeTriggeringPolicy struct {
+	timer *time.Timer
+
+	mu           sync.Mutex
+	currentTime  time.Time
+	isTriggering bool
+
+	stop chan bool
+}
+
+// NewTimeTriggeringPolicy allocates and returns a TimeTriggeringPolicy.
+func NewTimeTriggeringPolicy() *TimeTriggeringPolicy {
+	return &TimeTriggeringPolicy{
+		stop: make(chan bool),
+	}
+}
+
+// IsTriggering is called in Appender so it's only happens when an logging event
+// happens.
+func (p *TimeTriggeringPolicy) IsTriggering(*gol.LoggingEvent, *os.File) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// isTriggering is set by timer function
+	if p.isTriggering {
+		// Toggle it
+		p.isTriggering = false
+		return true
+	}
+	return false
+}
+
+// Start starts timer with current local time.
+func (p *TimeTriggeringPolicy) Start() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.startTimer(time.Now())
+	return nil
+}
+
+// Stop stops running timer.
+func (p *TimeTriggeringPolicy) Stop() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.timer != nil {
+		p.timer.Stop()
+		p.timer = nil
+		p.stop <- true
+	}
+	return nil
+}
+
+// startTimer must be called with p.mu held.
+func (p *TimeTriggeringPolicy) startTimer(now time.Time) {
+	p.currentTime = now
+	tmr := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 1, time.Local)
+
+	p.timer = time.NewTimer(tmr.Sub(p.currentTime))
+
+	go p.checkNewDay()
+}
+
+// CurrentTime return previous day actually as we want log file is generated with
+// the day before.
+func (p *TimeTriggeringPolicy) CurrentTime() time.Time {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.currentTime.AddDate(0, 0, -1)
+}
+
+// checkNewDay must be called in a go routine.
+func (p *TimeTriggeringPolicy) checkNewDay() {
+	select {
+	case tm := <-p.timer.C:
+		p.mu.Lock()
+		defer p.mu.Unlock()
+
+		p.isTriggering = true
+		p.startTimer(tm)
+	case <-p.stop:
+		return
+	}
+}
+
 // TimeRollingPolicy allows the roll over to be based on time.
+// TODO: able to specify format.
 type TimeRollingPolicy struct {
 	FilePattern string
 	FileCount   int
