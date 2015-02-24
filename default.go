@@ -317,7 +317,7 @@ func NewLoggerFactory(writer io.Writer) LoggerFactory {
 		root:    NewLogger(RootLoggerName),
 		loggers: make(map[string]*DefaultLogger),
 	}
-	factory.root.SetLevel(LevelDebug)
+	factory.root.SetLevel(LevelInfo)
 	factory.root.SetFormatter(NewFormatter())
 	factory.root.SetAppender(NewAppender(writer))
 	factory.loggers[RootLoggerName] = factory.root
