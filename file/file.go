@@ -112,6 +112,6 @@ func (a *Appender) Stop() error {
 // open must be called with a.mu held.
 func (a *Appender) open() error {
 	var err error
-	a.file, err = os.OpenFile(a.fileName, os.O_RDWR|os.O_CREATE, 0666)
+	a.file, err = os.OpenFile(a.fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	return err
 }

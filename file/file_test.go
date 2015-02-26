@@ -35,11 +35,44 @@ func TestFile(t *testing.T) {
 	}
 	appender.Append(event)
 
-	content, err := ioutil.ReadFile(file)
+	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(content), "gol/file: message") {
-		t.Fatalf("unexpected content: %s", string(content))
+	content := string(data)
+	if !strings.HasSuffix(content, "gol/file: message\n") {
+		t.Fatalf("unexpected content: %s", content)
+	}
+}
+
+func TestExistedFile(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	_, err = f.Write([]byte("test\n"))
+	f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	appender := NewAppender(f.Name())
+	event := &gol.LoggingEvent{
+		FormattedMessage: "message",
+		Level:            gol.LevelInfo,
+		Name:             "gol/file",
+		Time:             time.Now(),
+	}
+	appender.Append(event)
+	appender.Stop()
+
+	data, err := ioutil.ReadFile(f.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(data)
+	if !strings.HasPrefix(content, "test\n") || !strings.HasSuffix(content, "gol/file: message\n") {
+		t.Fatalf("unexpected content: %s", content)
 	}
 }
