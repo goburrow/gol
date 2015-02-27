@@ -1,4 +1,4 @@
-package misc
+package async
 
 import (
 	"bytes"
@@ -17,10 +17,10 @@ func (c channelWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func TestAsyncAppender(t *testing.T) {
+func TestAppender(t *testing.T) {
 	c := make(chan string)
 
-	appender := NewAsyncAppender(gol.NewAppender(channelWriter(c)))
+	appender := NewAppender(gol.NewAppender(channelWriter(c)))
 	event := &gol.LoggingEvent{
 		FormattedMessage: "run",
 		Name:             "async",
@@ -36,28 +36,30 @@ func TestAsyncAppender(t *testing.T) {
 	}
 }
 
-func TestThresholdAppender(t *testing.T) {
-	var buf bytes.Buffer
+func TestAppenderStop(t *testing.T) {
+	buffers := [...]bytes.Buffer{
+		bytes.Buffer{},
+		bytes.Buffer{},
+		bytes.Buffer{},
+	}
 
-	appender := NewThresholdAppender(gol.NewAppender(&buf))
-	appender.Threshold = gol.LevelInfo
+	appender := NewAppender(
+		gol.NewAppender(&buffers[0]),
+		gol.NewAppender(&buffers[1]),
+		gol.NewAppender(&buffers[2]),
+	)
+	appender.Start()
 	event := &gol.LoggingEvent{
-		FormattedMessage: "append",
-		Name:             "threshold",
+		FormattedMessage: "run",
+		Name:             "async",
 		Level:            gol.LevelInfo,
 		Time:             time.Now(),
 	}
 	appender.Append(event)
-	msg := buf.String()
-	if !strings.Contains(msg, "threshold: append") {
-		t.Fatalf("unexpected message: %#v", msg)
-	}
-	buf.Reset()
-
-	appender.Threshold = gol.LevelWarn
-	appender.Append(event)
-	msg = buf.String()
-	if "" != msg {
-		t.Fatalf("unexpected message: %#v", msg)
+	appender.Stop()
+	for i, _ := range buffers {
+		if !strings.Contains(buffers[i].String(), "async: run") {
+			t.Fatalf("unexpected message: %#v", buffers[i].String())
+		}
 	}
 }
