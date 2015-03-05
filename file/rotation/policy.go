@@ -1,4 +1,4 @@
-package file
+package rotation
 
 import (
 	"bytes"
@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/goburrow/gol"
 )
 
 const (
@@ -25,7 +23,7 @@ var (
 
 // TriggeringPolicy controls how rollingPolicy is activated.
 type TriggeringPolicy interface {
-	IsTriggering(*gol.LoggingEvent, *os.File) bool
+	IsTriggering(*os.File, []byte) bool
 }
 
 type RollingPolicy interface {
@@ -34,14 +32,14 @@ type RollingPolicy interface {
 
 // TimeKeeper return current time for file rolling.
 type TimeKeeper interface {
-	CurrentTime() time.Time
+	Now() time.Time
 }
 
 // noPolicy is a TriggeringPolicy and RollingPolicy which does nothing.
 type noPolicy struct {
 }
 
-func (*noPolicy) IsTriggering(*gol.LoggingEvent, *os.File) bool {
+func (*noPolicy) IsTriggering(*os.File, []byte) bool {
 	return false
 }
 
@@ -52,7 +50,7 @@ func (*noPolicy) Rollover(*os.File) error {
 // timeKeeperFunc implements TimeKeeper interface
 type timeKeeperFunc func() time.Time
 
-func (f timeKeeperFunc) CurrentTime() time.Time {
+func (f timeKeeperFunc) Now() time.Time {
 	return f()
 }
 
@@ -77,7 +75,7 @@ func NewTimeTriggeringPolicy() *TimeTriggeringPolicy {
 
 // IsTriggering is called in Appender so it's only happens when an logging event
 // happens.
-func (p *TimeTriggeringPolicy) IsTriggering(*gol.LoggingEvent, *os.File) bool {
+func (p *TimeTriggeringPolicy) IsTriggering(*os.File, []byte) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -160,7 +158,7 @@ func NewTimeRollingPolicy() *TimeRollingPolicy {
 }
 
 func (p *TimeRollingPolicy) Rollover(f *os.File) error {
-	now := p.TimeKeeper.CurrentTime()
+	now := p.TimeKeeper.Now()
 
 	var pattern string
 	if p.FilePattern != "" {
@@ -174,7 +172,7 @@ func (p *TimeRollingPolicy) Rollover(f *os.File) error {
 		name := fmt.Sprintf(pattern, timestamp)
 		if fileExists(name) {
 			if err := os.Remove(name); err != nil {
-				gol.Print(err)
+				return err
 			}
 		}
 	}

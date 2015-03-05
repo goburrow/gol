@@ -8,18 +8,19 @@ import (
 	"sync"
 
 	"github.com/goburrow/gol"
+	"github.com/goburrow/gol/file/rotation"
+)
+
+const (
+	openFlag = os.O_RDWR | os.O_CREATE | os.O_APPEND
+	openMode = 0644
 )
 
 // Appender is a file appender with rolling policy.
 type Appender struct {
-	fileName string
-
 	mu      sync.Mutex
-	file    *os.File
+	file    *rotation.File
 	encoder gol.Encoder
-
-	triggeringPolicy TriggeringPolicy
-	rollingPolicy    RollingPolicy
 
 	forceStopped bool
 }
@@ -30,10 +31,8 @@ var _ (gol.Appender) = (*Appender)(nil)
 // Calling Start is only needed for catching errors.
 func NewAppender(fileName string) *Appender {
 	return &Appender{
-		fileName:         fileName,
-		encoder:          gol.NewEncoder(),
-		triggeringPolicy: NoPolicy,
-		rollingPolicy:    NoPolicy,
+		file:    rotation.NewFile(fileName),
+		encoder: gol.NewEncoder(),
 	}
 }
 
@@ -43,18 +42,12 @@ func (a *Appender) Append(event *gol.LoggingEvent) {
 
 	var err error
 
-	if a.file == nil {
+	if !a.file.IsOpenned() {
 		// Do not auto start once stopped.
 		if a.forceStopped {
 			return
 		}
 		if err = a.open(); err != nil {
-			gol.Print(err)
-			return
-		}
-	}
-	if a.triggeringPolicy.IsTriggering(event, a.file) {
-		if err = a.rollingPolicy.Rollover(a.file); err != nil {
 			gol.Print(err)
 			return
 		}
@@ -72,16 +65,16 @@ func (a *Appender) SetEncoder(encoder gol.Encoder) {
 }
 
 // SetTriggeringPolicy changes the triggering policy of this appender.
-func (a *Appender) SetTriggeringPolicy(policy TriggeringPolicy) {
+func (a *Appender) SetTriggeringPolicy(policy rotation.TriggeringPolicy) {
 	a.mu.Lock()
-	a.triggeringPolicy = policy
+	a.file.SetTriggeringPolicy(policy)
 	a.mu.Unlock()
 }
 
 // SetRollingPolicy changes the rolling policy of this appender.
-func (a *Appender) SetRollingPolicy(policy RollingPolicy) {
+func (a *Appender) SetRollingPolicy(policy rotation.RollingPolicy) {
 	a.mu.Lock()
-	a.rollingPolicy = policy
+	a.file.SetRollingPolicy(policy)
 	a.mu.Unlock()
 }
 
@@ -90,7 +83,7 @@ func (a *Appender) Start() error {
 	defer a.mu.Unlock()
 
 	a.forceStopped = false
-	if a.file != nil {
+	if a.file.IsOpenned() {
 		return nil
 	}
 	return a.open()
@@ -101,17 +94,10 @@ func (a *Appender) Stop() error {
 	defer a.mu.Unlock()
 
 	a.forceStopped = true
-	if a.file != nil {
-		err := a.file.Close()
-		a.file = nil
-		return err
-	}
-	return nil
+	return a.file.Close()
 }
 
 // open must be called with a.mu held.
 func (a *Appender) open() error {
-	var err error
-	a.file, err = os.OpenFile(a.fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	return err
+	return a.file.Open(openFlag, openMode)
 }

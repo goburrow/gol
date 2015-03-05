@@ -1,4 +1,4 @@
-package file
+package rotation
 
 import (
 	"compress/gzip"
