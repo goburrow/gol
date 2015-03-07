@@ -41,7 +41,7 @@ func testFile(t *testing.T, triggering bool) {
 	f.SetTriggeringPolicy(policy)
 	f.SetRollingPolicy(policy)
 
-	err = f.Open(os.O_RDWR|os.O_CREATE, os.ModePerm)
+	err = f.Open()
 	if err != nil {
 		t.Fatal(err)
 	}

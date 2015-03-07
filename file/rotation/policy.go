@@ -30,9 +30,14 @@ type RollingPolicy interface {
 	Rollover(*os.File) error
 }
 
-// TimeKeeper return current time for file rolling.
-type TimeKeeper interface {
-	Now() time.Time
+type TriggerTimer interface {
+	TriggerTime() time.Time
+}
+
+type triggerTimerFunc func() time.Time
+
+func (f triggerTimerFunc) TriggerTime() time.Time {
+	return f()
 }
 
 // noPolicy is a TriggeringPolicy and RollingPolicy which does nothing.
@@ -47,29 +52,25 @@ func (*noPolicy) Rollover(*os.File) error {
 	return nil
 }
 
-// timeKeeperFunc implements TimeKeeper interface
-type timeKeeperFunc func() time.Time
-
-func (f timeKeeperFunc) Now() time.Time {
-	return f()
-}
-
 // TimeTriggeringPolicy triggers when day changed.
 // TODO: able to specify daily, weekly or monthly.
 type TimeTriggeringPolicy struct {
-	timer *time.Timer
-
 	mu           sync.Mutex
-	currentTime  time.Time
 	isTriggering bool
+	triggerTime  time.Time
 
-	stop chan bool
+	timer  *time.Timer
+	finish chan struct{}
+
+	currentTime func() time.Time
 }
+
+var _ TriggerTimer = (*TimeTriggeringPolicy)(nil)
 
 // NewTimeTriggeringPolicy allocates and returns a TimeTriggeringPolicy.
 func NewTimeTriggeringPolicy() *TimeTriggeringPolicy {
 	return &TimeTriggeringPolicy{
-		stop: make(chan bool),
+		currentTime: time.Now,
 	}
 }
 
@@ -93,7 +94,8 @@ func (p *TimeTriggeringPolicy) Start() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.startTimer(time.Now())
+	p.finish = make(chan struct{})
+	p.startTimer()
 	return nil
 }
 
@@ -104,42 +106,42 @@ func (p *TimeTriggeringPolicy) Stop() error {
 
 	if p.timer != nil {
 		p.timer.Stop()
+		close(p.finish)
 		p.timer = nil
-		p.stop <- true
 	}
 	return nil
 }
 
 // startTimer must be called with p.mu held.
-func (p *TimeTriggeringPolicy) startTimer(now time.Time) {
-	p.currentTime = now
-	tmr := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 1, time.Local)
+func (p *TimeTriggeringPolicy) startTimer() {
+	now := p.currentTime()
+	// Next day
+	tmr := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 1E3, time.Local)
+	p.timer = time.NewTimer(tmr.Sub(now))
 
-	p.timer = time.NewTimer(tmr.Sub(p.currentTime))
-
-	go p.checkNewDay()
+	go p.checkTriggering()
 }
 
-// CurrentTime return previous day actually as we want log file is generated with
-// the day before.
-func (p *TimeTriggeringPolicy) CurrentTime() time.Time {
+// TriggerTime returns the time trigger event was raised.
+func (p *TimeTriggeringPolicy) TriggerTime() time.Time {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	return p.currentTime.AddDate(0, 0, -1)
+	return p.triggerTime
 }
 
-// checkNewDay must be called in a go routine.
-func (p *TimeTriggeringPolicy) checkNewDay() {
+// checkTriggering must be called in a go routine.
+func (p *TimeTriggeringPolicy) checkTriggering() {
 	select {
+	case <-p.finish:
+		return
 	case tm := <-p.timer.C:
 		p.mu.Lock()
 		defer p.mu.Unlock()
 
 		p.isTriggering = true
-		p.startTimer(tm)
-	case <-p.stop:
-		return
+		p.triggerTime = tm
+		p.startTimer()
 	}
 }
 
@@ -148,27 +150,31 @@ func (p *TimeTriggeringPolicy) checkNewDay() {
 type TimeRollingPolicy struct {
 	FilePattern string
 	FileCount   int
-	TimeKeeper  TimeKeeper
+
+	TriggerTimer TriggerTimer
 }
 
 func NewTimeRollingPolicy() *TimeRollingPolicy {
 	return &TimeRollingPolicy{
-		TimeKeeper: timeKeeperFunc(time.Now),
+		// TODO: Associate with a TimeTriggeringPolicy
+		TriggerTimer: triggerTimerFunc(time.Now),
 	}
 }
 
 func (p *TimeRollingPolicy) Rollover(f *os.File) error {
-	now := p.TimeKeeper.Now()
-
 	var pattern string
 	if p.FilePattern != "" {
 		pattern = p.FilePattern
 	} else {
 		pattern = defaultFilePattern(f.Name())
 	}
+
+	// Previous day is used here actually as we want log file is generated with
+	// the day before the event happenned.
+	triggerTime := p.TriggerTimer.TriggerTime().AddDate(0, 0, -1)
 	// Remove history
 	if p.FileCount > 0 {
-		timestamp := now.AddDate(0, 0, -p.FileCount).Format(timeFormat)
+		timestamp := triggerTime.AddDate(0, 0, -p.FileCount).Format(timeFormat)
 		name := fmt.Sprintf(pattern, timestamp)
 		if fileExists(name) {
 			if err := os.Remove(name); err != nil {
@@ -176,8 +182,9 @@ func (p *TimeRollingPolicy) Rollover(f *os.File) error {
 			}
 		}
 	}
+
 	// Archive current file
-	name := fmt.Sprintf(pattern, now.Format(timeFormat))
+	name := fmt.Sprintf(pattern, triggerTime.Format(timeFormat))
 	target, err := os.Create(name)
 	if err != nil {
 		return err

@@ -38,8 +38,8 @@ func TestFileExists(t *testing.T) {
 
 var stubTime = time.Date(2015, 4, 3, 23, 59, 59, 9E8, time.Local)
 
-func stubCurrentTime() time.Time {
-	return stubTime
+func stubTriggerTime() time.Time {
+	return stubTime.Add(time.Second)
 }
 
 func TestTimeRollingPolicy(t *testing.T) {
@@ -67,7 +67,7 @@ func TestTimeRollingPolicy(t *testing.T) {
 	}
 	// Rolling policy
 	p := NewTimeRollingPolicy()
-	p.TimeKeeper = timeKeeperFunc(stubCurrentTime)
+	p.TriggerTimer = triggerTimerFunc(stubTriggerTime)
 	p.FilePattern = filepath.Join(dir, "archive-%s.log")
 	err = p.Rollover(f)
 	if err != nil {
@@ -112,7 +112,7 @@ func TestTimeRollingPolicyGzip(t *testing.T) {
 	}
 	// Policy
 	p := NewTimeRollingPolicy()
-	p.TimeKeeper = timeKeeperFunc(stubCurrentTime)
+	p.TriggerTimer = triggerTimerFunc(stubTriggerTime)
 	err = p.Rollover(f)
 	if err != nil {
 		t.Fatal(err)
@@ -165,7 +165,7 @@ func TestTimeRollingPolicyHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := NewTimeRollingPolicy()
-	p.TimeKeeper = timeKeeperFunc(stubCurrentTime)
+	p.TriggerTimer = triggerTimerFunc(stubTriggerTime)
 	p.FilePattern = filepath.Join(dir, "test-%s.log.gz")
 	p.FileCount = 4
 	if err = p.Rollover(f); err != nil {
@@ -201,10 +201,17 @@ func TestTimeRollingPolicyHistory(t *testing.T) {
 	}
 }
 
-func TestTriggerringPolicy(t *testing.T) {
+func TestTimeTriggerringPolicy(t *testing.T) {
 	p := NewTimeTriggeringPolicy()
+	p.currentTime = func() time.Time {
+		return stubTime
+	}
 
-	p.startTimer(stubTime)
+	err := p.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Stop()
 	triggering := p.IsTriggering(nil, nil)
 	if triggering {
 		t.Fatalf("invalid triggering: %#v", triggering)

@@ -4,16 +4,10 @@ Package file provides logging to file.
 package file
 
 import (
-	"os"
 	"sync"
 
 	"github.com/goburrow/gol"
 	"github.com/goburrow/gol/file/rotation"
-)
-
-const (
-	openFlag = os.O_RDWR | os.O_CREATE | os.O_APPEND
-	openMode = 0644
 )
 
 // Appender is a file appender with rolling policy.
@@ -47,7 +41,7 @@ func (a *Appender) Append(event *gol.LoggingEvent) {
 		if a.forceStopped {
 			return
 		}
-		if err = a.open(); err != nil {
+		if err = a.file.Open(); err != nil {
 			gol.Print(err)
 			return
 		}
@@ -86,7 +80,7 @@ func (a *Appender) Start() error {
 	if a.file.IsOpenned() {
 		return nil
 	}
-	return a.open()
+	return a.file.Open()
 }
 
 func (a *Appender) Stop() error {
@@ -95,9 +89,4 @@ func (a *Appender) Stop() error {
 
 	a.forceStopped = true
 	return a.file.Close()
-}
-
-// open must be called with a.mu held.
-func (a *Appender) open() error {
-	return a.file.Open(openFlag, openMode)
 }

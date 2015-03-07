@@ -8,6 +8,11 @@ import (
 	"os"
 )
 
+const (
+	openFlag = os.O_RDWR | os.O_CREATE | os.O_APPEND
+	openMode = 0644
+)
+
 // File is a wrapper for file writer which supports rotation. Operations on
 // File are not thread-safe.
 type File struct {
@@ -41,7 +46,12 @@ func (f *File) Write(b []byte) (int, error) {
 }
 
 // Open opens the file.
-func (f *File) Open(flag int, perm os.FileMode) error {
+func (f *File) Open() error {
+	return f.OpenFile(openFlag, openMode)
+}
+
+// OpenFile opens the file with the given flag and permission.
+func (f *File) OpenFile(flag int, perm os.FileMode) error {
 	file, err := os.OpenFile(f.name, flag, perm)
 	if err != nil {
 		return err
