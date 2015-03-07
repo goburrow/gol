@@ -28,9 +28,6 @@ import (
 var exampleLogger, appLogger gol.Logger
 
 func init() {
-	// Override the default logger if needed, e.g.
-	// gol.SetLoggerFactory(gol.NewLoggerFactory(os.Stderr))
-
 	// Get logger with name "app/example"
 	exampleLogger = gol.GetLogger("app/example")
 	// Logger "app" is the parent of the logger "app/example"

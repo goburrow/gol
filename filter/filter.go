@@ -9,7 +9,8 @@ import (
 	"github.com/goburrow/gol"
 )
 
-// Appender is an logging appender which supports minimum level.
+// Appender is an logging appender which supports level threshold, inclusive or
+// exclusive logger name.
 type Appender struct {
 	appender gol.Appender
 

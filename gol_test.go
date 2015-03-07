@@ -22,14 +22,6 @@ func TestGetLogger(t *testing.T) {
 	}
 }
 
-func TestSetLoggerFactory(t *testing.T) {
-	SetLoggerFactory(&stubFactory{})
-	logger := GetLogger("go")
-	if "test.go" != logger.(*DefaultLogger).name {
-		t.Fatalf("Unexpected logger %#v", logger)
-	}
-}
-
 func TestDebugMode(t *testing.T) {
 	f, err := ioutil.TempFile("", "")
 	if err != nil {
