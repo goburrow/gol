@@ -21,6 +21,8 @@ type Appender struct {
 
 	mu     sync.Mutex
 	finish chan struct{}
+
+	forceStopped bool
 }
 
 var _ (gol.Appender) = (*Appender)(nil)
@@ -41,13 +43,20 @@ func NewAppender(bufferSize int, appenders ...gol.Appender) *Appender {
 
 // Append sends the event to all appenders.
 func (a *Appender) Append(e *gol.LoggingEvent) {
-	for _, c := range a.chans {
-		select {
-		case c <- e:
-			// Succeed.
-		default:
-			// TODO: retry
+	// Need to use mutex here to make sure messages are in correct order
+	// for all channels.
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.finish == nil {
+		if a.forceStopped {
+			// Skip the event if appender is stopped.
+			return
 		}
+		a.start()
+	}
+	for _, c := range a.chans {
+		// FIXME: This is still blocking if a channel buffer is full.
+		c <- e
 	}
 }
 
@@ -56,15 +65,20 @@ func (a *Appender) Start() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	a.forceStopped = false
 	if a.finish != nil {
 		return nil // started
 	}
+	a.start()
+	return nil
+}
+
+func (a *Appender) start() {
 	a.finish = make(chan struct{})
 	a.wg.Add(len(a.chans))
 	for i, c := range a.chans {
 		go a.receive(c, a.appenders[i])
 	}
-	return nil
 }
 
 // Stop makes sure all appenders finish. It must be called when exiting.
@@ -72,6 +86,7 @@ func (a *Appender) Stop() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	a.forceStopped = true
 	if a.finish == nil {
 		return nil // not started
 	}
