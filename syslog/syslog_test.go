@@ -39,6 +39,10 @@ func TestAppender(t *testing.T) {
 	appender := NewAppender()
 	err := appender.Start()
 	if err != nil {
+		if strings.Contains(err.Error(), "syslog delivery error") {
+			// Syslog is not supported.
+			t.Skip(err)
+		}
 		t.Fatal(err)
 	}
 	defer appender.Stop()

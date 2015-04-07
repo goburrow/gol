@@ -24,5 +24,5 @@ func connectLocal(_ string, _ string) (net.Conn, error) {
 			}
 		}
 	}
-	return nil, errors.New("unix syslog delivery error")
+	return nil, errors.New("gol: unix syslog delivery error")
 }
