@@ -56,6 +56,7 @@ func (a *Appender) Append(e *gol.LoggingEvent) {
 	a.appender.Append(e)
 }
 
+// SetThreshold change logging threshold.
 func (a *Appender) SetThreshold(t gol.Level) {
 	a.threshold = t
 }

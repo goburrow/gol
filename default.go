@@ -12,6 +12,7 @@ const packageSeparator = '/'
 // Level represents logging level.
 type Level int
 
+// Log levels
 const (
 	LevelUninitialized Level = iota
 	LevelAll
@@ -24,7 +25,7 @@ const (
 )
 
 const (
-	// Name of the root logger.
+	// RootLoggerName is the name of the root logger.
 	RootLoggerName = "root"
 	// ISO8601 with milliseconds.
 	defaultTimeLayout = "2006-01-02T15:04:05.000Z07:00"
@@ -85,6 +86,8 @@ func NewFormatter() *DefaultFormatter {
 	return &DefaultFormatter{}
 }
 
+// Format utilizes fmt.Sprintf and returns formatted message from
+// the given logging event.
 func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
 	if len(event.Arguments) == 0 {
 		return event.Format
@@ -106,6 +109,7 @@ func NewEncoder() *DefaultEncoder {
 	}
 }
 
+// Encode writes logging event to target.
 func (encoder *DefaultEncoder) Encode(event *LoggingEvent, target io.Writer) error {
 	var err error
 	_, err = fmt.Fprintf(target, encoder.Layout,
@@ -177,7 +181,8 @@ func NewLogger(name string) *DefaultLogger {
 	}
 }
 
-func (logger *DefaultLogger) Trace(format string, args ...interface{}) {
+// Tracef logs message at Trace level.
+func (logger *DefaultLogger) Tracef(format string, args ...interface{}) {
 	logger.log(LevelTrace, format, args)
 }
 
@@ -186,7 +191,8 @@ func (logger *DefaultLogger) TraceEnabled() bool {
 	return logger.loggable(LevelTrace)
 }
 
-func (logger *DefaultLogger) Debug(format string, args ...interface{}) {
+// Debugf logs message at Debug level.
+func (logger *DefaultLogger) Debugf(format string, args ...interface{}) {
 	logger.log(LevelDebug, format, args)
 }
 
@@ -195,7 +201,8 @@ func (logger *DefaultLogger) DebugEnabled() bool {
 	return logger.loggable(LevelDebug)
 }
 
-func (logger *DefaultLogger) Info(format string, args ...interface{}) {
+// Infof logs message at Info level.
+func (logger *DefaultLogger) Infof(format string, args ...interface{}) {
 	logger.log(LevelInfo, format, args)
 }
 
@@ -204,7 +211,8 @@ func (logger *DefaultLogger) InfoEnabled() bool {
 	return logger.loggable(LevelInfo)
 }
 
-func (logger *DefaultLogger) Warn(format string, args ...interface{}) {
+// Warnf logs message at Warning level.
+func (logger *DefaultLogger) Warnf(format string, args ...interface{}) {
 	logger.log(LevelWarn, format, args)
 }
 
@@ -213,7 +221,8 @@ func (logger *DefaultLogger) WarnEnabled() bool {
 	return logger.loggable(LevelWarn)
 }
 
-func (logger *DefaultLogger) Error(format string, args ...interface{}) {
+// Errorf logs message at Error level.
+func (logger *DefaultLogger) Errorf(format string, args ...interface{}) {
 	logger.log(LevelError, format, args)
 }
 

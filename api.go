@@ -2,15 +2,15 @@ package gol
 
 // Logger specifies how logging in application is done.
 type Logger interface {
-	Trace(string, ...interface{})
+	Tracef(string, ...interface{})
 	TraceEnabled() bool
-	Debug(string, ...interface{})
+	Debugf(string, ...interface{})
 	DebugEnabled() bool
-	Info(string, ...interface{})
+	Infof(string, ...interface{})
 	InfoEnabled() bool
-	Warn(string, ...interface{})
+	Warnf(string, ...interface{})
 	WarnEnabled() bool
-	Error(string, ...interface{})
+	Errorf(string, ...interface{})
 	ErrorEnabled() bool
 }
 

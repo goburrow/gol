@@ -30,6 +30,7 @@ func NewAppender(fileName string) *Appender {
 	}
 }
 
+// Append encodes the given logging event to file.
 func (a *Appender) Append(event *gol.LoggingEvent) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -72,6 +73,7 @@ func (a *Appender) SetRollingPolicy(policy rotation.RollingPolicy) {
 	a.mu.Unlock()
 }
 
+// Start opens the log file.
 func (a *Appender) Start() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -83,6 +85,7 @@ func (a *Appender) Start() error {
 	return a.file.Open()
 }
 
+// Stop closes the log file.
 func (a *Appender) Stop() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()

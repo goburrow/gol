@@ -140,11 +140,11 @@ func TestLogger(t *testing.T) {
 	logger.SetFormatter(NewFormatter())
 	logger.SetAppender(NewAppender(&buf))
 
-	logger.Trace("Trace")
-	logger.Debug("Debug %v %v", "a", 1)
-	logger.Info("Info %v %v", "b", 2)
-	logger.Error("Error %v", "c")
-	logger.Warn("Warn")
+	logger.Tracef("Trace")
+	logger.Debugf("Debug %v %v", "a", 1)
+	logger.Infof("Info %v %v", "b", 2)
+	logger.Errorf("Error %v", "c")
+	logger.Warnf("Warn")
 
 	content := buf.String()
 	lines := strings.Split(content, "\n")
@@ -161,11 +161,11 @@ func TestLogger(t *testing.T) {
 }
 
 func logAllLevels(logger Logger) {
-	logger.Trace("Trace")
-	logger.Debug("Debug")
-	logger.Info("Info")
-	logger.Warn("Warn")
-	logger.Error("Error")
+	logger.Tracef("Trace")
+	logger.Debugf("Debug")
+	logger.Infof("Info")
+	logger.Warnf("Warn")
+	logger.Errorf("Error")
 }
 
 func TestRootLogger(t *testing.T) {

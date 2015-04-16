@@ -35,7 +35,7 @@ func NewAppender(bufferSize int, appenders ...gol.Appender) *Appender {
 
 		DrainTimeout: 10 * time.Second,
 	}
-	for i, _ := range appenders {
+	for i := range appenders {
 		a.chans[i] = make(chan *gol.LoggingEvent, bufferSize)
 	}
 	return a

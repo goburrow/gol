@@ -183,21 +183,21 @@ func TestTimeRollingPolicyHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(name3); err == nil {
-		t.Fatal("%#v should be removed", name3)
+		t.Fatalf("%#v should be removed", name3)
 	}
 	p.FileCount = 2
 	if err = p.Rollover(f); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(name2); err == nil {
-		t.Fatal("%#v should be removed", name2)
+		t.Fatalf("%#v should be removed", name2)
 	}
 	p.FileCount = 1
 	if err = p.Rollover(f); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(name1); err == nil {
-		t.Fatal("%#v should should be removed", name1)
+		t.Fatalf("%#v should should be removed", name1)
 	}
 }
 

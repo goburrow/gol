@@ -68,7 +68,7 @@ func TestAppenderStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i, _ := range buffers {
+	for i := range buffers {
 		if !strings.Contains(buffers[i].String(), "async: run") {
 			t.Fatalf("unexpected message: %#v", buffers[i].String())
 		}

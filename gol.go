@@ -21,6 +21,7 @@ func GetLogger(name string) Logger {
 	return staticLoggerFactory.GetLogger(name)
 }
 
+// SetDebugMode sets debug mode in gol package.
 func SetDebugMode(val bool) {
 	debugMode = val
 }

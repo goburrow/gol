@@ -1,5 +1,5 @@
 /*
-Package file provides logging to syslog.
+Package syslog provides logging to syslog.
 */
 package syslog
 
@@ -26,6 +26,7 @@ const (
 	dialTimeoutMs = 60000
 )
 
+// Facility is the syslog facility.
 type Facility int
 
 // Facility
@@ -77,6 +78,7 @@ type Encoder struct {
 	Facility Facility
 }
 
+// NewEncoder allocates and returns a new Encoder.
 func NewEncoder() *Encoder {
 	return &Encoder{
 		DefaultEncoder: gol.DefaultEncoder{
@@ -86,6 +88,7 @@ func NewEncoder() *Encoder {
 	}
 }
 
+// Encode encodes logging event and sends to target.
 func (encoder *Encoder) Encode(event *gol.LoggingEvent, target io.Writer) error {
 	priority := encoder.getPriority(event)
 	timestamp := event.Time.Format(encoder.TimeLayout)
@@ -137,12 +140,14 @@ type Appender struct {
 
 var _ gol.Appender = (*Appender)(nil)
 
+// NewAppender allocates and returns a new Appender.
 func NewAppender() *Appender {
 	return &Appender{
 		Facility: LOG_LOCAL0,
 	}
 }
 
+// Append encodes the given logging event and sends to syslog connection.
 func (a *Appender) Append(event *gol.LoggingEvent) {
 	a.mu.Lock()
 	defer a.mu.Unlock()

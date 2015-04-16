@@ -17,6 +17,7 @@ const (
 )
 
 var (
+	// NoPolicy never triggers and does nothing when rolling.
 	NoPolicy       = &noPolicy{}
 	errSamePattern = errors.New("archived file pattern same to current active file")
 )
@@ -26,10 +27,12 @@ type TriggeringPolicy interface {
 	IsTriggering(*os.File, []byte) bool
 }
 
+// RollingPolicy rolls over the log file.
 type RollingPolicy interface {
 	Rollover(*os.File) error
 }
 
+// TriggerTimer returns trigger time
 type TriggerTimer interface {
 	TriggerTime() time.Time
 }
@@ -154,6 +157,7 @@ type TimeRollingPolicy struct {
 	TriggerTimer TriggerTimer
 }
 
+// NewTimeRollingPolicy allocates and returns a new TimeRollingPolicy.
 func NewTimeRollingPolicy() *TimeRollingPolicy {
 	return &TimeRollingPolicy{
 		// TODO: Associate with a TimeTriggeringPolicy
@@ -161,6 +165,7 @@ func NewTimeRollingPolicy() *TimeRollingPolicy {
 	}
 }
 
+// Rollover rolls the log file.
 func (p *TimeRollingPolicy) Rollover(f *os.File) error {
 	var pattern string
 	if p.FilePattern != "" {

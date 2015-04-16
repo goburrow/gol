@@ -17,16 +17,16 @@ func init() {
 }
 
 func main() {
-	exampleLogger.Info("Running app with arguments: %v.", os.Args)
+	exampleLogger.Infof("Running app with arguments: %v.", os.Args)
 
-	exampleLogger.Warn("Going to do nothing.")
+	exampleLogger.Warnf("Going to do nothing.")
 	time.Sleep(1 * time.Second)
 
 	// DefaultLogger is the internal implementation of Logger
 	appLogger.(*gol.DefaultLogger).SetLevel(gol.LevelWarn)
 
-	exampleLogger.Info("You won't see this message.")
-	appLogger.Error("I %v! %[2]v %[2]v.", "quit", "bye")
+	exampleLogger.Infof("You won't see this message.")
+	appLogger.Errorf("I %v! %[2]v %[2]v.", "quit", "bye")
 
 	// Output:
 	// INFO  [2015-01-14T12:43:35.546+10:00] app/example: Running app with arguments: [/go/bin/example].

@@ -24,7 +24,7 @@ func (f writerFunc) Write(b []byte) (int, error) {
 // write prints log message as level INFO.
 func write(b []byte) (int, error) {
 	logger := gol.GetLogger(getName(b))
-	logger.Info(getMessage(b))
+	logger.Infof(getMessage(b))
 	return len(b), nil
 }
 
