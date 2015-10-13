@@ -240,11 +240,11 @@ func (logger *DefaultLogger) SetParent(parent *DefaultLogger) {
 
 // Level returns level of this logger or parent if not set.
 func (logger *DefaultLogger) Level() Level {
-	if logger.level != LevelUninitialized {
-		return logger.level
-	}
-	if logger.parent != nil {
-		return logger.parent.Level()
+	for logger != nil {
+		if logger.level != LevelUninitialized {
+			return logger.level
+		}
+		logger = logger.parent
 	}
 	return LevelOff
 }
@@ -256,13 +256,13 @@ func (logger *DefaultLogger) SetLevel(level Level) {
 
 // Formatter returns formatter of this logger or parent if not set.
 func (logger *DefaultLogger) Formatter() Formatter {
-	if logger.formatter != nil {
-		return logger.formatter
+	for logger != nil {
+		if logger.formatter != nil {
+			return logger.formatter
+		}
+		logger = logger.parent
 	}
-	if logger.parent != nil {
-		return logger.parent.Formatter()
-	}
-	return logger.formatter
+	return nil
 }
 
 // SetFormatter changes formatter of this logger.
@@ -272,13 +272,13 @@ func (logger *DefaultLogger) SetFormatter(formatter Formatter) {
 
 // Appender returns appender of this logger or parent if not set.
 func (logger *DefaultLogger) Appender() Appender {
-	if logger.appender != nil {
-		return logger.appender
+	for logger != nil {
+		if logger.appender != nil {
+			return logger.appender
+		}
+		logger = logger.parent
 	}
-	if logger.parent != nil {
-		return logger.parent.Appender()
-	}
-	return logger.appender
+	return nil
 }
 
 // SetAppender changes appender of this logger.
@@ -351,7 +351,7 @@ func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
 func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
 	parent := factory.root
 	for i, c := range name {
-		// Search for "." character
+		// Search for package separator character
 		if c == packageSeparator {
 			parentName := name[0:i]
 			if parentName != "" {
