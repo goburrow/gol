@@ -183,7 +183,7 @@ func NewLogger(name string) *DefaultLogger {
 
 // Tracef logs message at Trace level.
 func (logger *DefaultLogger) Tracef(format string, args ...interface{}) {
-	logger.log(Trace, format, args)
+	logger.Printf(Trace, format, args)
 }
 
 // TraceEnabled checks if Trace level is enabled.
@@ -193,7 +193,7 @@ func (logger *DefaultLogger) TraceEnabled() bool {
 
 // Debugf logs message at Debug level.
 func (logger *DefaultLogger) Debugf(format string, args ...interface{}) {
-	logger.log(Debug, format, args)
+	logger.Printf(Debug, format, args)
 }
 
 // DebugEnabled checks if Debug level is enabled.
@@ -203,7 +203,7 @@ func (logger *DefaultLogger) DebugEnabled() bool {
 
 // Infof logs message at Info level.
 func (logger *DefaultLogger) Infof(format string, args ...interface{}) {
-	logger.log(Info, format, args)
+	logger.Printf(Info, format, args)
 }
 
 // InfoEnabled checks if Info level is enabled.
@@ -213,7 +213,7 @@ func (logger *DefaultLogger) InfoEnabled() bool {
 
 // Warnf logs message at Warning level.
 func (logger *DefaultLogger) Warnf(format string, args ...interface{}) {
-	logger.log(Warn, format, args)
+	logger.Printf(Warn, format, args)
 }
 
 // WarnEnabled checks if Warning level is enabled.
@@ -223,7 +223,7 @@ func (logger *DefaultLogger) WarnEnabled() bool {
 
 // Errorf logs message at Error level.
 func (logger *DefaultLogger) Errorf(format string, args ...interface{}) {
-	logger.log(Error, format, args)
+	logger.Printf(Error, format, args)
 }
 
 // ErrorEnabled checks if Error level is enabled.
@@ -292,7 +292,7 @@ func (logger *DefaultLogger) loggable(level Level) bool {
 }
 
 // log performs logging with given parameters.
-func (logger *DefaultLogger) log(level Level, format string, args []interface{}) {
+func (logger *DefaultLogger) Printf(level Level, format string, args []interface{}) {
 	if !logger.loggable(level) {
 		return
 	}
