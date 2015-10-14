@@ -17,7 +17,7 @@ func TestEncoder(t *testing.T) {
 
 	event := &gol.LoggingEvent{
 		FormattedMessage: "message",
-		Level:            gol.LevelDebug,
+		Level:            gol.Debug,
 		Name:             "gol/syslog",
 		Time:             time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.Local),
 	}
@@ -49,7 +49,7 @@ func TestAppender(t *testing.T) {
 
 	event := &gol.LoggingEvent{
 		FormattedMessage: "message",
-		Level:            gol.LevelInfo,
+		Level:            gol.Info,
 		Name:             "gol/syslog",
 	}
 	appender.Append(event)

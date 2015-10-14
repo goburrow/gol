@@ -109,11 +109,11 @@ func (encoder *Encoder) Encode(event *gol.LoggingEvent, target io.Writer) error 
 
 func (encoder *Encoder) getPriority(event *gol.LoggingEvent) int {
 	priority := int(encoder.Facility) * 8
-	if event.Level >= gol.LevelError {
+	if event.Level >= gol.Error {
 		priority += sError
-	} else if event.Level >= gol.LevelWarn {
+	} else if event.Level >= gol.Warn {
 		priority += sWarn
-	} else if event.Level >= gol.LevelInfo {
+	} else if event.Level >= gol.Info {
 		priority += sInfo
 	} else {
 		priority += sDebug

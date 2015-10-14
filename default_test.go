@@ -71,7 +71,7 @@ func TestEncoder(t *testing.T) {
 	event := &LoggingEvent{
 		FormattedMessage: "message",
 		Name:             "name",
-		Level:            LevelError,
+		Level:            Error,
 		Time:             time.Date(2015, time.March, 21, 0, 0, 0, 789000000, time.FixedZone("Asia/Ho_Chi_Minh", 7*60*60)),
 	}
 
@@ -93,7 +93,7 @@ func TestAppender(t *testing.T) {
 	event := &LoggingEvent{
 		FormattedMessage: "something",
 		Name:             "My Logger",
-		Level:            LevelTrace,
+		Level:            Trace,
 		Time:             time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.UTC),
 	}
 	appender.Append(event)
@@ -136,7 +136,7 @@ func TestLogger(t *testing.T) {
 	var buf bytes.Buffer
 
 	logger := NewLogger("MyLogger")
-	logger.SetLevel(LevelInfo)
+	logger.SetLevel(Info)
 	logger.SetFormatter(NewFormatter())
 	logger.SetAppender(NewAppender(&buf))
 
@@ -174,7 +174,7 @@ func TestRootLogger(t *testing.T) {
 	// Should do nothing
 	logAllLevels(logger)
 
-	logger.SetLevel(LevelInfo)
+	logger.SetLevel(Info)
 	logAllLevels(logger)
 
 	logger.SetFormatter(NewFormatter())
@@ -189,7 +189,7 @@ func TestLoggerLevel(t *testing.T) {
 	var buf bytes.Buffer
 
 	root := NewLogger(RootLoggerName)
-	root.SetLevel(LevelAll)
+	root.SetLevel(All)
 	root.SetFormatter(NewFormatter())
 	root.SetAppender(NewAppender(&buf))
 
@@ -204,7 +204,7 @@ func TestLoggerLevel(t *testing.T) {
 	assertContains(t, buf.String(), "TRACE", "Trace", "DEBUG", "Debug", "INFO", "Info", "WARN", "Warn", "ERROR", "Error")
 
 	buf.Reset()
-	logger.SetLevel(LevelTrace)
+	logger.SetLevel(Trace)
 	assertEquals(t, true, logger.TraceEnabled())
 	assertEquals(t, true, logger.DebugEnabled())
 	assertEquals(t, true, logger.InfoEnabled())
@@ -214,7 +214,7 @@ func TestLoggerLevel(t *testing.T) {
 	assertContains(t, buf.String(), "TRACE", "Trace", "DEBUG", "Debug", "INFO", "Info", "WARN", "Warn", "ERROR", "Error")
 
 	buf.Reset()
-	logger.SetLevel(LevelDebug)
+	logger.SetLevel(Debug)
 	assertEquals(t, false, logger.TraceEnabled())
 	assertEquals(t, true, logger.DebugEnabled())
 	assertEquals(t, true, logger.InfoEnabled())
@@ -224,7 +224,7 @@ func TestLoggerLevel(t *testing.T) {
 	assertContains(t, buf.String(), "DEBUG", "Debug", "INFO", "Info", "WARN", "Warn", "ERROR", "Error")
 
 	buf.Reset()
-	logger.SetLevel(LevelInfo)
+	logger.SetLevel(Info)
 	assertEquals(t, false, logger.TraceEnabled())
 	assertEquals(t, false, logger.DebugEnabled())
 	assertEquals(t, true, logger.InfoEnabled())
@@ -234,7 +234,7 @@ func TestLoggerLevel(t *testing.T) {
 	assertContains(t, buf.String(), "INFO", "Info", "WARN", "Warn", "ERROR", "Error")
 
 	buf.Reset()
-	logger.SetLevel(LevelWarn)
+	logger.SetLevel(Warn)
 	assertEquals(t, false, logger.TraceEnabled())
 	assertEquals(t, false, logger.DebugEnabled())
 	assertEquals(t, false, logger.InfoEnabled())
@@ -244,7 +244,7 @@ func TestLoggerLevel(t *testing.T) {
 	assertContains(t, buf.String(), "WARN", "Warn", "ERROR", "Error")
 
 	buf.Reset()
-	logger.SetLevel(LevelError)
+	logger.SetLevel(Error)
 	assertEquals(t, false, logger.TraceEnabled())
 	assertEquals(t, false, logger.DebugEnabled())
 	assertEquals(t, false, logger.InfoEnabled())
@@ -254,7 +254,7 @@ func TestLoggerLevel(t *testing.T) {
 	assertContains(t, buf.String(), "ERROR", "Error")
 
 	buf.Reset()
-	logger.SetLevel(LevelOff)
+	logger.SetLevel(Off)
 	assertEquals(t, false, logger.TraceEnabled())
 	assertEquals(t, false, logger.DebugEnabled())
 	assertEquals(t, false, logger.InfoEnabled())

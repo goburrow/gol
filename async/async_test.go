@@ -29,7 +29,7 @@ func TestAppender(t *testing.T) {
 	event := &gol.LoggingEvent{
 		FormattedMessage: "run",
 		Name:             "async",
-		Level:            gol.LevelInfo,
+		Level:            gol.Info,
 		Time:             time.Now(),
 	}
 	appender.Append(event)
@@ -60,7 +60,7 @@ func TestAppenderStop(t *testing.T) {
 	event := &gol.LoggingEvent{
 		FormattedMessage: "run",
 		Name:             "async",
-		Level:            gol.LevelInfo,
+		Level:            gol.Info,
 		Time:             time.Now(),
 	}
 	appender.Append(event)
@@ -83,7 +83,7 @@ func TestAppenderLifeCycle(t *testing.T) {
 	event := &gol.LoggingEvent{
 		FormattedMessage: "run",
 		Name:             "async",
-		Level:            gol.LevelInfo,
+		Level:            gol.Info,
 		Time:             time.Now(),
 	}
 

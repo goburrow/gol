@@ -14,14 +14,14 @@ type Level int
 
 // Log levels
 const (
-	LevelUninitialized Level = iota
-	LevelAll
-	LevelTrace
-	LevelDebug
-	LevelInfo
-	LevelWarn
-	LevelError
-	LevelOff
+	Uninitialized Level = iota
+	All
+	Trace
+	Debug
+	Info
+	Warn
+	Error
+	Off
 )
 
 const (
@@ -34,13 +34,13 @@ const (
 )
 
 var levelStrings = map[Level]string{
-	LevelAll:   "ALL",
-	LevelTrace: "TRACE",
-	LevelDebug: "DEBUG",
-	LevelInfo:  "INFO",
-	LevelWarn:  "WARN",
-	LevelError: "ERROR",
-	LevelOff:   "OFF",
+	All:   "ALL",
+	Trace: "TRACE",
+	Debug: "DEBUG",
+	Info:  "INFO",
+	Warn:  "WARN",
+	Error: "ERROR",
+	Off:   "OFF",
 }
 
 // LevelString returns the text for the level.
@@ -177,58 +177,58 @@ type DefaultLogger struct {
 func NewLogger(name string) *DefaultLogger {
 	return &DefaultLogger{
 		name:  name,
-		level: LevelUninitialized,
+		level: Uninitialized,
 	}
 }
 
 // Tracef logs message at Trace level.
 func (logger *DefaultLogger) Tracef(format string, args ...interface{}) {
-	logger.log(LevelTrace, format, args)
+	logger.log(Trace, format, args)
 }
 
 // TraceEnabled checks if Trace level is enabled.
 func (logger *DefaultLogger) TraceEnabled() bool {
-	return logger.loggable(LevelTrace)
+	return logger.loggable(Trace)
 }
 
 // Debugf logs message at Debug level.
 func (logger *DefaultLogger) Debugf(format string, args ...interface{}) {
-	logger.log(LevelDebug, format, args)
+	logger.log(Debug, format, args)
 }
 
 // DebugEnabled checks if Debug level is enabled.
 func (logger *DefaultLogger) DebugEnabled() bool {
-	return logger.loggable(LevelDebug)
+	return logger.loggable(Debug)
 }
 
 // Infof logs message at Info level.
 func (logger *DefaultLogger) Infof(format string, args ...interface{}) {
-	logger.log(LevelInfo, format, args)
+	logger.log(Info, format, args)
 }
 
 // InfoEnabled checks if Info level is enabled.
 func (logger *DefaultLogger) InfoEnabled() bool {
-	return logger.loggable(LevelInfo)
+	return logger.loggable(Info)
 }
 
 // Warnf logs message at Warning level.
 func (logger *DefaultLogger) Warnf(format string, args ...interface{}) {
-	logger.log(LevelWarn, format, args)
+	logger.log(Warn, format, args)
 }
 
 // WarnEnabled checks if Warning level is enabled.
 func (logger *DefaultLogger) WarnEnabled() bool {
-	return logger.loggable(LevelWarn)
+	return logger.loggable(Warn)
 }
 
 // Errorf logs message at Error level.
 func (logger *DefaultLogger) Errorf(format string, args ...interface{}) {
-	logger.log(LevelError, format, args)
+	logger.log(Error, format, args)
 }
 
 // ErrorEnabled checks if Error level is enabled.
 func (logger *DefaultLogger) ErrorEnabled() bool {
-	return logger.loggable(LevelError)
+	return logger.loggable(Error)
 }
 
 // SetParent sets the parent of current logger.
@@ -241,12 +241,12 @@ func (logger *DefaultLogger) SetParent(parent *DefaultLogger) {
 // Level returns level of this logger or parent if not set.
 func (logger *DefaultLogger) Level() Level {
 	for logger != nil {
-		if logger.level != LevelUninitialized {
+		if logger.level != Uninitialized {
 			return logger.level
 		}
 		logger = logger.parent
 	}
-	return LevelOff
+	return Off
 }
 
 // SetLevel changes logging level of this logger.
@@ -326,7 +326,7 @@ func NewLoggerFactory(writer io.Writer) LoggerFactory {
 		root:    NewLogger(RootLoggerName),
 		loggers: make(map[string]*DefaultLogger),
 	}
-	factory.root.SetLevel(LevelInfo)
+	factory.root.SetLevel(Info)
 	factory.root.SetFormatter(NewFormatter())
 	factory.root.SetAppender(NewAppender(writer))
 	factory.loggers[RootLoggerName] = factory.root

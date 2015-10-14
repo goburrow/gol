@@ -27,7 +27,7 @@ var _ (gol.Appender) = (*Appender)(nil)
 func NewAppender(a gol.Appender) *Appender {
 	return &Appender{
 		appender:  a,
-		threshold: gol.LevelAll,
+		threshold: gol.All,
 	}
 }
 

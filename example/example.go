@@ -23,7 +23,7 @@ func main() {
 	time.Sleep(1 * time.Second)
 
 	// DefaultLogger is the internal implementation of Logger
-	appLogger.(*gol.DefaultLogger).SetLevel(gol.LevelWarn)
+	appLogger.(*gol.DefaultLogger).SetLevel(gol.Warn)
 
 	exampleLogger.Infof("You won't see this message.")
 	appLogger.Errorf("I %v! %[2]v %[2]v.", "quit", "bye")

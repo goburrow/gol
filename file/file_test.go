@@ -29,7 +29,7 @@ func TestFile(t *testing.T) {
 
 	event := &gol.LoggingEvent{
 		FormattedMessage: "message",
-		Level:            gol.LevelInfo,
+		Level:            gol.Info,
 		Name:             "gol/file",
 		Time:             time.Now(),
 	}
@@ -60,7 +60,7 @@ func TestExistedFile(t *testing.T) {
 	appender := NewAppender(f.Name())
 	event := &gol.LoggingEvent{
 		FormattedMessage: "message",
-		Level:            gol.LevelInfo,
+		Level:            gol.Info,
 		Name:             "gol/file",
 		Time:             time.Now(),
 	}
