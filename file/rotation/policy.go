@@ -135,10 +135,11 @@ func (p *TimeTriggeringPolicy) TriggerTime() time.Time {
 
 // checkTriggering must be called in a go routine.
 func (p *TimeTriggeringPolicy) checkTriggering() {
+	timer := p.timer
 	select {
 	case <-p.finish:
 		return
-	case tm := <-p.timer.C:
+	case tm := <-timer.C:
 		p.mu.Lock()
 		defer p.mu.Unlock()
 
