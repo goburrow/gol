@@ -1,5 +1,5 @@
 /*
-Package gol provides a simple logging framework.
+Package gol provides a simple logging framework, inspired by SLF4J.
 */
 package gol
 
