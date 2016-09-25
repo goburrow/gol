@@ -2,10 +2,8 @@ env:
 - secure: "guY7Zv68POLEd8wrNFlyHF5quopX/eWTkoJG738AelRe9vadZeM4RdkUa21Qz7OskTtn8UP/lBLAOd4cyTNZ/P2HUaP9kR8oe2/H8UBrg+mpmbe/Ah65zPJvkVK5S6fxh6LNEdqorbw17ew9+9ooKhAWwGoD+aM7WNacmWGWFaY="
 language: go
 go:
-- 1.2
-- 1.3
-- 1.4
-- 1.5
+- 1.6
+- 1.7
 - tip
 install:
 - if [ $TRAVIS_GO_VERSION = "tip" ]; then go get golang.org/x/tools/cmd/cover github.com/mattn/goveralls; fi
