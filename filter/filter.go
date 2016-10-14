@@ -61,16 +61,18 @@ func (a *Appender) SetThreshold(t gol.Level) {
 	a.threshold = t
 }
 
-// SetIncludes set inclusive logger names. It also sorts the includes so do not
-// modify the list.
-func (a *Appender) SetIncludes(includes []string) {
-	a.includes = includes
-	sort.Strings(a.includes)
+// SetIncludes set inclusive logger names.
+func (a *Appender) SetIncludes(includes ...string) {
+	in := make([]string, len(includes))
+	copy(in, includes)
+	sort.Strings(in)
+	a.includes = in
 }
 
-// SetExcludes set exclusive logger names. It also sorts the excludes so do not
-// modify the list.
-func (a *Appender) SetExcludes(excludes []string) {
-	a.excludes = excludes
-	sort.Strings(a.excludes)
+// SetExcludes set exclusive logger names.
+func (a *Appender) SetExcludes(excludes ...string) {
+	ex := make([]string, len(excludes))
+	copy(ex, excludes)
+	sort.Strings(ex)
+	a.excludes = ex
 }

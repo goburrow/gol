@@ -45,7 +45,7 @@ func TestAppenderIncludes(t *testing.T) {
 		Time:  time.Now(),
 	}
 	event.Message.WriteString("append")
-	appender.SetIncludes([]string{"filter"})
+	appender.SetIncludes("filter")
 	appender.Append(event)
 	msg := buf.String()
 	if !strings.Contains(msg, "filter: append") {
@@ -53,7 +53,7 @@ func TestAppenderIncludes(t *testing.T) {
 	}
 	buf.Reset()
 
-	appender.SetIncludes([]string{"filter3", "filter1", "filter2"})
+	appender.SetIncludes("filter3", "filter1", "filter2")
 	appender.Append(event)
 	msg = buf.String()
 	if "" != msg {
@@ -71,21 +71,21 @@ func TestAppenderExcludes(t *testing.T) {
 		Time:  time.Now(),
 	}
 	event.Message.WriteString("append")
-	appender.SetExcludes([]string{"filter"})
+	appender.SetExcludes("filter")
 	appender.Append(event)
 	msg := buf.String()
 	if "" != msg {
 		t.Fatalf("unexpected message: %#v", msg)
 	}
 	// Excludes overrule includes
-	appender.SetIncludes([]string{"filter"})
+	appender.SetIncludes("filter")
 	appender.Append(event)
 	msg = buf.String()
 	if "" != msg {
 		t.Fatalf("unexpected message: %#v", msg)
 	}
-	appender.SetExcludes([]string{"filter3", "filter1", "filter2"})
-	appender.SetIncludes(nil)
+	appender.SetExcludes("filter3", "filter1", "filter2")
+	appender.SetIncludes()
 	appender.Append(event)
 	msg = buf.String()
 	if !strings.Contains(msg, "filter: append") {
