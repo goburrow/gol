@@ -9,23 +9,31 @@ import (
 	"github.com/goburrow/gol"
 )
 
-func TestEncoder(t *testing.T) {
-	encoder := NewEncoder()
-	encoder.Hostname = "localhost"
-	encoder.Tag = "gol"
-	encoder.Facility = LOG_LOCAL7
+type bufNopCloser struct {
+	bytes.Buffer
+}
+
+func (b *bufNopCloser) Close() error {
+	return nil
+}
+
+func TestStubAppender(t *testing.T) {
+	var buf bufNopCloser
+
+	appender := NewAppender()
+	appender.Tag = "gol"
+	appender.Facility = LOG_LOCAL7
+	appender.hostname = "localhost"
+	appender.conn = &buf
 
 	event := &gol.LoggingEvent{
-		FormattedMessage: "message",
-		Level:            gol.Debug,
-		Name:             "gol/syslog",
-		Time:             time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.Local),
+		Level: gol.Debug,
+		Name:  "gol/syslog",
+		Time:  time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.Local),
 	}
+	event.Message.WriteString("message")
 
-	var buf bytes.Buffer
-	if err := encoder.Encode(event, &buf); err != nil {
-		t.Fatal(err)
-	}
+	appender.Append(event)
 	msg := buf.String()
 	if !strings.HasPrefix(msg, "<191>") {
 		t.Fatalf("invalid priority %s", msg)
@@ -48,9 +56,9 @@ func TestAppender(t *testing.T) {
 	defer appender.Stop()
 
 	event := &gol.LoggingEvent{
-		FormattedMessage: "message",
-		Level:            gol.Info,
-		Name:             "gol/syslog",
+		Level: gol.Info,
+		Name:  "gol/syslog",
 	}
+	event.Message.WriteString("message")
 	appender.Append(event)
 }

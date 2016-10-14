@@ -14,7 +14,7 @@ type Logger interface {
 	ErrorEnabled() bool
 }
 
-// LoggerFactory produces Logger.
-type LoggerFactory interface {
+// Factory produces Logger.
+type Factory interface {
 	GetLogger(name string) Logger
 }

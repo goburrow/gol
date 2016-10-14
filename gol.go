@@ -10,15 +10,15 @@ import (
 )
 
 var (
-	// staticLoggerFactory is the default logger factory that is used by GetLogger().
-	staticLoggerFactory = NewLoggerFactory(os.Stdout)
+	// defaultFactory is the default logger factory that is used by GetLogger().
+	defaultFactory = NewFactory(os.Stdout)
 	// debugMode allows Print to write results to standard error.
 	debugMode = false
 )
 
 // GetLogger returns Logger in the default logger factory.
 func GetLogger(name string) Logger {
-	return staticLoggerFactory.GetLogger(name)
+	return defaultFactory.GetLogger(name)
 }
 
 // SetDebugMode sets debug mode in gol package.

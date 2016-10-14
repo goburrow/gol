@@ -1,6 +1,7 @@
 package gol
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"sync"
@@ -27,10 +28,6 @@ const (
 const (
 	// RootLoggerName is the name of the root logger.
 	RootLoggerName = "root"
-	// ISO8601 with milliseconds.
-	defaultTimeLayout = "2006-01-02T15:04:05.000Z07:00"
-	// See LoggingEvent for the order.
-	defaultLayout = "%-5[3]s [%[4]s] %[2]s: %[1]s\n"
 )
 
 var levelStrings = map[Level]string{
@@ -50,26 +47,29 @@ func LevelString(level Level) string {
 
 // LoggingEvent is the representation of logging events.
 type LoggingEvent struct {
-	Format    string
-	Arguments []interface{}
-	// #1 FormattedMessage is the message formatted by Formatter.
-	FormattedMessage string
-	// #2: Name of the logger.
+	// Name is the of the logger.
 	Name string
-	// #3: Log level
+	// Level is the current logger level.
 	Level Level
-	// #4: Time that the logging happens.
+	// Time is when the logging happens.
 	Time time.Time
+
+	Message bytes.Buffer
 }
 
-// Formatter constructs final message with given event.
-type Formatter interface {
-	Format(*LoggingEvent) string
+var eventPool = sync.Pool{}
+
+func newLoggingEvent() *LoggingEvent {
+	e := eventPool.Get()
+	if e != nil {
+		return e.(*LoggingEvent)
+	}
+	return &LoggingEvent{}
 }
 
-// Encoder encodes logging event to the given target.
-type Encoder interface {
-	Encode(*LoggingEvent, io.Writer) error
+func releaseLoggingEvent(e *LoggingEvent) {
+	e.Message.Reset()
+	eventPool.Put(e)
 }
 
 // Appender appends contents to a Writer.
@@ -77,107 +77,81 @@ type Appender interface {
 	Append(*LoggingEvent)
 }
 
-// DefaultFormatter implements Formatter interface.
-type DefaultFormatter struct {
-}
-
-// NewFormatter allocates and returns a new DefaultFormatter.
-func NewFormatter() *DefaultFormatter {
-	return &DefaultFormatter{}
-}
-
-// Format utilizes fmt.Sprintf and returns formatted message from
-// the given logging event.
-func (formatter *DefaultFormatter) Format(event *LoggingEvent) string {
-	if len(event.Arguments) == 0 {
-		return event.Format
-	}
-	return fmt.Sprintf(event.Format, event.Arguments...)
-}
-
-// DefaultEncoder implements Encoder interface.
-type DefaultEncoder struct {
-	Layout     string
-	TimeLayout string
-}
-
-// NewEncoder allocates and returns a new DefaultEncoder.
-func NewEncoder() *DefaultEncoder {
-	return &DefaultEncoder{
-		Layout:     defaultLayout,
-		TimeLayout: defaultTimeLayout,
-	}
-}
-
-// Encode writes logging event to target.
-func (encoder *DefaultEncoder) Encode(event *LoggingEvent, target io.Writer) error {
-	var err error
-	_, err = fmt.Fprintf(target, encoder.Layout,
-		event.FormattedMessage,
-		event.Name,
-		LevelString(event.Level),
-		event.Time.Format(encoder.TimeLayout))
-	return err
-}
-
 // DefaultAppender implements Appender interface.
 type DefaultAppender struct {
-	encoder Encoder
+	timeLayout string
 
-	mu     sync.Mutex
 	target io.Writer
 }
 
 // NewAppender allocates and returns a new DefaultAppender.
 func NewAppender(target io.Writer) *DefaultAppender {
 	return &DefaultAppender{
-		encoder: NewEncoder(),
-		target:  target,
+		timeLayout: "2006-01-02T15:04:05.000Z07:00", // ISO8601 with milliseconds.
+		target:     target,
 	}
 }
 
 // Append uses its encoder to send the event to the target.
 func (appender *DefaultAppender) Append(event *LoggingEvent) {
-	appender.mu.Lock()
-	defer appender.mu.Unlock()
+	if appender.target == nil {
+		return
+	}
+	// Use buffer from a logging event
+	e := newLoggingEvent()
+	defer releaseLoggingEvent(e)
+	buf := &e.Message
 
-	if err := appender.encoder.Encode(event, appender.target); err != nil {
+	// Level (minimum 5 characters)
+	level := LevelString(event.Level)
+	n, _ := buf.WriteString(level)
+	for n = 5 - n; n > 0; n-- {
+		buf.WriteByte(' ')
+	}
+
+	// Time
+	buf.WriteByte(' ')
+	buf.WriteByte('[')
+	var timeBuf [64]byte
+	buf.Write(event.Time.AppendFormat(timeBuf[:0], appender.timeLayout))
+	buf.WriteByte(']')
+
+	// Logger name
+	buf.WriteByte(' ')
+	buf.WriteString(event.Name)
+	buf.WriteByte(':')
+
+	// Logging message in the end
+	buf.WriteByte(' ')
+	buf.Write(event.Message.Bytes())
+	buf.WriteByte('\n')
+
+	_, err := buf.WriteTo(appender.target)
+	if err != nil {
 		Print(err)
 	}
 }
 
-// SetTarget changes target of this appender.
-func (appender *DefaultAppender) SetTarget(target io.Writer) {
-	appender.mu.Lock()
-	appender.target = target
-	appender.mu.Unlock()
-}
-
-// SetEncoder changes encoder of this appender.
-func (appender *DefaultAppender) SetEncoder(encoder Encoder) {
-	appender.mu.Lock()
-	appender.encoder = encoder
-	appender.mu.Unlock()
-}
-
 // DefaultLogger implements Logger interface.
 type DefaultLogger struct {
-	name   string
-	parent *DefaultLogger
+	name  string
+	level Level
 
-	level     Level
-	formatter Formatter
-	appender  Appender
+	appender Appender
+
+	parent *DefaultLogger
 }
 
-// NewLogger allocates and returns a new DefaultLogger.
+// New allocates and returns a new DefaultLogger.
 // This method should not be called directly in application, use
-// LoggerFactory.GetLogger() instead as a DefaultLogger requires Appender and
-// Formatter either from itself or its parent.
-func NewLogger(name string) *DefaultLogger {
+// LoggerFactory.GetLogger() instead as a DefaultLogger requires
+// Appender from itself or its parent.
+func New(name string, parent *DefaultLogger) *DefaultLogger {
 	return &DefaultLogger{
 		name:  name,
 		level: Uninitialized,
+
+		parent: parent,
 	}
 }
 
@@ -231,13 +205,6 @@ func (logger *DefaultLogger) ErrorEnabled() bool {
 	return logger.loggable(Error)
 }
 
-// SetParent sets the parent of current logger.
-func (logger *DefaultLogger) SetParent(parent *DefaultLogger) {
-	if parent != logger {
-		logger.parent = parent
-	}
-}
-
 // Level returns level of this logger or parent if not set.
 func (logger *DefaultLogger) Level() Level {
 	for logger != nil {
@@ -252,22 +219,6 @@ func (logger *DefaultLogger) Level() Level {
 // SetLevel changes logging level of this logger.
 func (logger *DefaultLogger) SetLevel(level Level) {
 	logger.level = level
-}
-
-// Formatter returns formatter of this logger or parent if not set.
-func (logger *DefaultLogger) Formatter() Formatter {
-	for logger != nil {
-		if logger.formatter != nil {
-			return logger.formatter
-		}
-		logger = logger.parent
-	}
-	return nil
-}
-
-// SetFormatter changes formatter of this logger.
-func (logger *DefaultLogger) SetFormatter(formatter Formatter) {
-	logger.formatter = formatter
 }
 
 // Appender returns appender of this logger or parent if not set.
@@ -296,59 +247,61 @@ func (logger *DefaultLogger) Printf(level Level, format string, args []interface
 	if !logger.loggable(level) {
 		return
 	}
-	formatter := logger.Formatter()
 	appender := logger.Appender()
-	if formatter == nil || appender == nil {
+	if appender == nil {
 		return
 	}
-	event := LoggingEvent{
-		Time:      time.Now(),
-		Name:      logger.name,
-		Level:     level,
-		Format:    format,
-		Arguments: args,
-	}
-	event.FormattedMessage = formatter.Format(&event)
-	appender.Append(&event)
+	event := newLoggingEvent()
+	defer releaseLoggingEvent(event)
+
+	event.Time = time.Now()
+	event.Name = logger.name
+	event.Level = level
+	fmt.Fprintf(&event.Message, format, args...)
+
+	appender.Append(event)
 }
 
-// DefaultLoggerFactory implements LoggerFactory interface.
-type DefaultLoggerFactory struct {
+// DefaultFactory implements Factory interface.
+type DefaultFactory struct {
 	root *DefaultLogger
 
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	loggers map[string]*DefaultLogger
 }
 
-// NewLoggerFactory allocates and returns new DefaultLoggerFactory.
-func NewLoggerFactory(writer io.Writer) LoggerFactory {
-	factory := &DefaultLoggerFactory{
-		root:    NewLogger(RootLoggerName),
-		loggers: make(map[string]*DefaultLogger),
+// NewFactory allocates and returns new DefaultFactory.
+func NewFactory(writer io.Writer) *DefaultFactory {
+	rootLogger := New(RootLoggerName, nil)
+	rootLogger.SetLevel(Info)
+	rootLogger.SetAppender(NewAppender(writer))
+
+	return &DefaultFactory{
+		root: rootLogger,
+		loggers: map[string]*DefaultLogger{
+			RootLoggerName: rootLogger,
+		},
 	}
-	factory.root.SetLevel(Info)
-	factory.root.SetFormatter(NewFormatter())
-	factory.root.SetAppender(NewAppender(writer))
-	factory.loggers[RootLoggerName] = factory.root
-	return factory
 }
 
 // GetLogger returns a new Logger or an existing one if the same name is found.
-func (factory *DefaultLoggerFactory) GetLogger(name string) Logger {
+func (factory *DefaultFactory) GetLogger(name string) Logger {
 	if name == "" {
 		return factory.root
 	}
-	factory.mu.Lock()
-	defer factory.mu.Unlock()
+	factory.mu.RLock()
 	logger, ok := factory.loggers[name]
+	factory.mu.RUnlock()
 	if !ok {
+		factory.mu.Lock()
 		logger = factory.createLogger(name, factory.getParent(name))
+		factory.mu.Unlock()
 	}
 	return logger
 }
 
 // getParent returns parent logger for given logger.
-func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
+func (factory *DefaultFactory) getParent(name string) *DefaultLogger {
 	parent := factory.root
 	for i, c := range name {
 		// Search for package separator character
@@ -363,11 +316,10 @@ func (factory *DefaultLoggerFactory) getParent(name string) *DefaultLogger {
 }
 
 // createLogger creates a new logger if not exist.
-func (factory *DefaultLoggerFactory) createLogger(name string, parent *DefaultLogger) *DefaultLogger {
+func (factory *DefaultFactory) createLogger(name string, parent *DefaultLogger) *DefaultLogger {
 	logger, ok := factory.loggers[name]
 	if !ok {
-		logger = NewLogger(name)
-		logger.SetParent(parent)
+		logger = New(name, parent)
 		factory.loggers[name] = logger
 	}
 	return logger

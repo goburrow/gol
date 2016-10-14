@@ -28,11 +28,11 @@ func TestFile(t *testing.T) {
 	defer appender.Stop()
 
 	event := &gol.LoggingEvent{
-		FormattedMessage: "message",
-		Level:            gol.Info,
-		Name:             "gol/file",
-		Time:             time.Now(),
+		Level: gol.Info,
+		Name:  "gol/file",
+		Time:  time.Now(),
 	}
+	event.Message.WriteString("message")
 	appender.Append(event)
 
 	data, err := ioutil.ReadFile(file)
@@ -58,12 +58,16 @@ func TestExistedFile(t *testing.T) {
 	}
 
 	appender := NewAppender(f.Name())
-	event := &gol.LoggingEvent{
-		FormattedMessage: "message",
-		Level:            gol.Info,
-		Name:             "gol/file",
-		Time:             time.Now(),
+	err = appender.Start()
+	if err != nil {
+		t.Fatal(err)
 	}
+	event := &gol.LoggingEvent{
+		Level: gol.Info,
+		Name:  "gol/file",
+		Time:  time.Now(),
+	}
+	event.Message.WriteString("message")
 	appender.Append(event)
 	appender.Stop()
 

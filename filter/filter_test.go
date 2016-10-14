@@ -14,11 +14,11 @@ func TestAppenderThreshold(t *testing.T) {
 
 	appender := NewAppender(gol.NewAppender(&buf))
 	event := &gol.LoggingEvent{
-		FormattedMessage: "append",
-		Name:             "filter",
-		Level:            gol.Info,
-		Time:             time.Now(),
+		Name:  "filter",
+		Level: gol.Info,
+		Time:  time.Now(),
 	}
+	event.Message.WriteString("append")
 	appender.SetThreshold(gol.Info)
 	appender.Append(event)
 	msg := buf.String()
@@ -40,11 +40,11 @@ func TestAppenderIncludes(t *testing.T) {
 
 	appender := NewAppender(gol.NewAppender(&buf))
 	event := &gol.LoggingEvent{
-		FormattedMessage: "append",
-		Name:             "filter",
-		Level:            gol.Info,
-		Time:             time.Now(),
+		Name:  "filter",
+		Level: gol.Info,
+		Time:  time.Now(),
 	}
+	event.Message.WriteString("append")
 	appender.SetIncludes([]string{"filter"})
 	appender.Append(event)
 	msg := buf.String()
@@ -66,11 +66,11 @@ func TestAppenderExcludes(t *testing.T) {
 
 	appender := NewAppender(gol.NewAppender(&buf))
 	event := &gol.LoggingEvent{
-		FormattedMessage: "append",
-		Name:             "filter",
-		Level:            gol.Info,
-		Time:             time.Now(),
+		Name:  "filter",
+		Level: gol.Info,
+		Time:  time.Now(),
 	}
+	event.Message.WriteString("append")
 	appender.SetExcludes([]string{"filter"})
 	appender.Append(event)
 	msg := buf.String()

@@ -12,11 +12,10 @@ import (
 
 // Appender is a file appender with rolling policy.
 type Appender struct {
-	mu      sync.Mutex
-	file    *rotation.File
-	encoder gol.Encoder
+	mu   sync.Mutex
+	file *rotation.File
 
-	forceStopped bool
+	appender gol.Appender
 }
 
 var _ (gol.Appender) = (*Appender)(nil)
@@ -24,9 +23,11 @@ var _ (gol.Appender) = (*Appender)(nil)
 // NewAppender allocates and returns a new Appender.
 // Calling Start is only needed for catching errors.
 func NewAppender(fileName string) *Appender {
+	file := rotation.NewFile(fileName)
+
 	return &Appender{
-		file:    rotation.NewFile(fileName),
-		encoder: gol.NewEncoder(),
+		file:     file,
+		appender: gol.NewAppender(file),
 	}
 }
 
@@ -35,28 +36,9 @@ func (a *Appender) Append(event *gol.LoggingEvent) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	var err error
-
-	if !a.file.IsOpenned() {
-		// Do not auto start once stopped.
-		if a.forceStopped {
-			return
-		}
-		if err = a.file.Open(); err != nil {
-			gol.Print(err)
-			return
-		}
+	if a.file.IsOpenned() {
+		a.appender.Append(event)
 	}
-	if err = a.encoder.Encode(event, a.file); err != nil {
-		gol.Print(err)
-	}
-}
-
-// SetEncoder changes the encoder of this appender.
-func (a *Appender) SetEncoder(encoder gol.Encoder) {
-	a.mu.Lock()
-	a.encoder = encoder
-	a.mu.Unlock()
 }
 
 // SetTriggeringPolicy changes the triggering policy of this appender.
@@ -78,7 +60,6 @@ func (a *Appender) Start() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.forceStopped = false
 	if a.file.IsOpenned() {
 		return nil
 	}
@@ -90,6 +71,5 @@ func (a *Appender) Stop() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.forceStopped = true
 	return a.file.Close()
 }

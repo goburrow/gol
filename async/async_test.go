@@ -26,11 +26,11 @@ func TestAppenderAsync(t *testing.T) {
 	appender.Start()
 	defer appender.Stop()
 	event := &gol.LoggingEvent{
-		FormattedMessage: "run",
-		Name:             "async",
-		Level:            gol.Info,
-		Time:             time.Now(),
+		Name:  "async",
+		Level: gol.Info,
+		Time:  time.Now(),
 	}
+	event.Message.WriteString("run")
 	appender.Append(event)
 	select {
 	case msg := <-c:
@@ -69,11 +69,11 @@ func TestAppenderStop(t *testing.T) {
 	)
 	appender.Start()
 	event := &gol.LoggingEvent{
-		FormattedMessage: "run",
-		Name:             "async",
-		Level:            gol.Info,
-		Time:             time.Now(),
+		Name:  "async",
+		Level: gol.Info,
+		Time:  time.Now(),
 	}
+	event.Message.WriteString("run")
 	for i := 0; i < size; i++ {
 		appender.Append(event)
 	}
@@ -94,11 +94,11 @@ func TestAppenderLifeCycle(t *testing.T) {
 	appender := NewAppenderWithBufSize(size, gol.NewAppender(&buf))
 
 	event := &gol.LoggingEvent{
-		FormattedMessage: "run",
-		Name:             "async",
-		Level:            gol.Info,
-		Time:             time.Now(),
+		Name:  "async",
+		Level: gol.Info,
+		Time:  time.Now(),
 	}
+	event.Message.WriteString("run")
 
 	appender.Start()
 	for i := 0; i < size; i++ {

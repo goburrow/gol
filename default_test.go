@@ -3,7 +3,6 @@ package gol
 import (
 	"bytes"
 	"errors"
-	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -47,97 +46,63 @@ func assertContains(t *testing.T, s string, subs ...string) {
 	}
 }
 
-func TestFormatter(t *testing.T) {
-	formatter := NewFormatter()
-	args := make([]interface{}, 2)
-	args[0] = "#1"
-	args[1] = "#2"
-
-	event := LoggingEvent{
-		Format:    "Arguments: %v, %v",
-		Arguments: args,
-	}
-	event.FormattedMessage = formatter.Format(&event)
-	assertEquals(t, "Arguments: #1, #2", event.FormattedMessage)
-
-	// Empty argument
-	event.Arguments = nil
-	event.FormattedMessage = formatter.Format(&event)
-	assertEquals(t, "Arguments: %v, %v", event.FormattedMessage)
-}
-
-func TestEncoder(t *testing.T) {
-	encoder := NewEncoder()
-	event := &LoggingEvent{
-		FormattedMessage: "message",
-		Name:             "name",
-		Level:            Error,
-		Time:             time.Date(2015, time.March, 21, 0, 0, 0, 789000000, time.FixedZone("Asia/Ho_Chi_Minh", 7*60*60)),
-	}
-
-	var buf bytes.Buffer
-	encoder.Encode(event, &buf)
-	assertEquals(t, "ERROR [2015-03-21T00:00:00.789+07:00] name: message\n", buf.String())
-
-	buf.Reset()
-	encoder.Layout = "%[4]s %[2]s: (%[3]s) %[1]s\n"
-	encoder.TimeLayout = time.RFC3339
-	encoder.Encode(event, &buf)
-	assertEquals(t, "2015-03-21T00:00:00+07:00 name: (ERROR) message\n", buf.String())
-}
-
 func TestAppender(t *testing.T) {
 	var buf bytes.Buffer
 	appender := NewAppender(&buf)
 
 	event := &LoggingEvent{
-		FormattedMessage: "something",
-		Name:             "My Logger",
-		Level:            Trace,
-		Time:             time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.UTC),
+		Name:  "My Logger",
+		Level: Trace,
+		Time:  time.Date(2015, time.April, 3, 2, 1, 0, 789000000, time.UTC),
 	}
+	event.Message.WriteString("something")
 	appender.Append(event)
 
-	event.FormattedMessage = "something else"
+	event.Message.Reset()
+	event.Message.WriteString("something else")
+	event.Level = Warn
 	event.Time = event.Time.Add(1 * time.Minute)
-
-	var buf2 bytes.Buffer
-	encoder := NewEncoder()
-	encoder.Layout = "%[4]s %[2]s: %[1]s\n"
-
-	appender.SetTarget(&buf2)
-	appender.SetEncoder(encoder)
-
 	appender.Append(event)
-	assertEquals(t, "TRACE [2015-04-03T02:01:00.789Z] My Logger: something\n", buf.String())
-	assertEquals(t, "2015-04-03T02:02:00.789Z My Logger: something else\n", buf2.String())
+
+	assertEquals(t, "TRACE [2015-04-03T02:01:00.789Z] My Logger: something\n"+
+		"WARN  [2015-04-03T02:02:00.789Z] My Logger: something else\n", buf.String())
 }
 
-type errorEncoder struct {
+func TestAppenderWithTimeLayout(t *testing.T) {
+	var buf bytes.Buffer
+	appender := NewAppender(&buf)
+	appender.timeLayout = time.RFC3339
+
+	event := &LoggingEvent{
+		Name:  "name",
+		Level: Error,
+		Time:  time.Date(2015, time.March, 21, 0, 0, 0, 789000000, time.FixedZone("Asia/Ho_Chi_Minh", 7*60*60)),
+	}
+	event.Message.WriteString("message")
+	appender.Append(event)
+
+	assertEquals(t, "ERROR [2015-03-21T00:00:00+07:00] name: message\n", buf.String())
 }
 
-func (*errorEncoder) Encode(*LoggingEvent, io.Writer) error {
-	return errors.New("encode")
+type errorWriter struct {
+}
+
+func (*errorWriter) Write([]byte) (int, error) {
+	return 0, errors.New("write")
 }
 
 func TestAppenderWithErrorEncoder(t *testing.T) {
-	var buf bytes.Buffer
-	appender := NewAppender(&buf)
-	appender.SetEncoder(&errorEncoder{})
+	appender := NewAppender(&errorWriter{})
 
-	event := &LoggingEvent{
-		FormattedMessage: "something",
-	}
+	event := &LoggingEvent{}
 	appender.Append(event)
-	assertEquals(t, "", buf.String())
 }
 
 func TestLogger(t *testing.T) {
 	var buf bytes.Buffer
 
-	logger := NewLogger("MyLogger")
+	logger := New("MyLogger", nil)
 	logger.SetLevel(Info)
-	logger.SetFormatter(NewFormatter())
 	logger.SetAppender(NewAppender(&buf))
 
 	logger.Tracef("Trace")
@@ -169,7 +134,7 @@ func logAllLevels(logger Logger) {
 }
 
 func TestRootLogger(t *testing.T) {
-	logger := NewLogger("RootLogger")
+	logger := New("RootLogger", nil)
 
 	// Should do nothing
 	logAllLevels(logger)
@@ -177,10 +142,6 @@ func TestRootLogger(t *testing.T) {
 	logger.SetLevel(Info)
 	logAllLevels(logger)
 
-	logger.SetFormatter(NewFormatter())
-	logAllLevels(logger)
-
-	logger.SetFormatter(nil)
 	logger.SetAppender(NewAppender(nil))
 	logAllLevels(logger)
 }
@@ -188,13 +149,11 @@ func TestRootLogger(t *testing.T) {
 func TestLoggerLevel(t *testing.T) {
 	var buf bytes.Buffer
 
-	root := NewLogger(RootLoggerName)
+	root := New(RootLoggerName, nil)
 	root.SetLevel(All)
-	root.SetFormatter(NewFormatter())
 	root.SetAppender(NewAppender(&buf))
 
-	logger := NewLogger("MyLogger")
-	logger.SetParent(root)
+	logger := New("MyLogger", root)
 	assertEquals(t, true, logger.TraceEnabled())
 	assertEquals(t, true, logger.DebugEnabled())
 	assertEquals(t, true, logger.InfoEnabled())
@@ -266,7 +225,7 @@ func TestLoggerLevel(t *testing.T) {
 }
 
 func TestLoggerFactory(t *testing.T) {
-	factory := NewLoggerFactory(os.Stdout)
+	factory := NewFactory(os.Stdout)
 	logger := factory.GetLogger("abc").(*DefaultLogger)
 
 	assertEquals(t, "abc", logger.name)
@@ -279,7 +238,7 @@ func TestLoggerFactory(t *testing.T) {
 }
 
 func TestLoggerHierarchy(t *testing.T) {
-	factory := NewLoggerFactory(os.Stdout)
+	factory := NewFactory(os.Stdout)
 	root := factory.GetLogger("").(*DefaultLogger)
 	if root.parent != nil {
 		t.Fatal("Parent of root logger must be nil")
@@ -295,9 +254,9 @@ func TestLoggerHierarchy(t *testing.T) {
 }
 
 func TestHierarchyWithRootLogger(t *testing.T) {
-	factory := NewLoggerFactory(os.Stdout)
+	factory := NewFactory(os.Stdout)
 	root := factory.GetLogger(RootLoggerName).(*DefaultLogger)
 	a := factory.GetLogger("root/a").(*DefaultLogger)
-	assertEquals(t, 2, len(factory.(*DefaultLoggerFactory).loggers))
+	assertEquals(t, 2, len(factory.loggers))
 	assertEquals(t, root, a.parent)
 }

@@ -12,7 +12,7 @@ type stubFactory struct {
 }
 
 func (f *stubFactory) GetLogger(name string) Logger {
-	return NewLogger("test." + name)
+	return New("test."+name, nil)
 }
 
 func TestGetLogger(t *testing.T) {
